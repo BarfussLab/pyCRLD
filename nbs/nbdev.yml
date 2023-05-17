@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "pyCRLD"
+  site-url: "https://wbarfuss.github.io/pyCRLD"
+  description: "Collective Reinforcement Learning Dynamics in Python"
+  repo-branch: main
+  repo-url: "https://github.com/wbarfuss/pyCRLD"
