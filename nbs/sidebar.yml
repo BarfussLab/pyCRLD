@@ -2,3 +2,19 @@ website:
   sidebar:
     contents:
       - index.ipynb
+      - section: Agents
+        contents:
+          - Agents/01_AStrategyActorCritic.ipynb
+          - Agents/02_AStrategySARSA.ipynb
+          - Agents/10_AStrategyBase.ipynb
+          - Agents/99_ABase.ipynb
+      - section: Environments
+        contents:
+          - Environments/00_EnvBase.ipynb
+          - Environments/01_EnvHistoryEmbedding.ipynb
+          - Environments/10_EnvSocialDilemma.ipynb
+          - Environments/11_EnvEcologicalPublicGood.ipynb
+      - section: Utils
+        contents:
+          - Utils/01_UFlowPlot.ipynb
+          - Utils/99_UHelpers.ipynb
