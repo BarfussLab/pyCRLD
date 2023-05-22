@@ -17,7 +17,7 @@ integrating platform to in-silico test hypotheses and build theory on
 how different cognitive mechanisms affect collective adaptive behavior
 in complex environments.
 
-![](_figures/MAEi_core.png)
+![](nbs/0images/MAEi_core.png)
 
 In combination with advances in machine learning, particularly deep
 learning, modern MARL has produced spectacular successes in
