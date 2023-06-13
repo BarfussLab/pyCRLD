@@ -36,7 +36,7 @@ class stratSARSA(strategybase):
         NextQ = self.NextQisa(Xisa, Risa=R)
 
         n = jnp.newaxis
-        E = self.pre[:,n,n]*R + self.gamma[:,n,n]*NextQ - 1/self.beta * jnp.log(Xisa)
+        E = self.pre[:,n,n]*R + self.gamma[:,n,n]*NextQ - 1/self.beta[:, n, n] * jnp.log(Xisa)
         E *= self.beta[:,n,n]
 
         E = E - E.mean(axis=2, keepdims=True) if norm else E
