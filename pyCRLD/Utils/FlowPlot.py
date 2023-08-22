@@ -78,11 +78,12 @@ def plot_trajectories(Xtrajs:Iterable,  # Iterable of phase space trajectories
                       alphas:Iterable=[1.0],  # Alpha values to iterate through
                       lss:Iterable=["-"],  # Linestyles to iterate through
                       lws:Iterable=[2],  # Linewidths to iterate through
-                      mss:Iterable=[None],  # Markers to iterate through
-                      msss:Iterable=[0],  # Marker sizes to iterate through
+                      mss:Iterable=[None],  # Endmarkers to iterate through
+                      msss:Iterable=[0],  # Endmarker sizes to iterate through
                       fprs:Union[Iterable,bool]=None,  # Iteralbe indicating which trajectories reached a fixed point 
+                      plot_startmarker:bool=True, # plot a marker at the initial condition 
                       axes:Iterable=None,  # Axes to plot into
-                      submean=False):
+                      submean:bool=False):
     """
     Plot multiple trajectories in phase space. 
     """
@@ -116,7 +117,8 @@ def plot_trajectories(Xtrajs:Iterable,  # Iterable of phase space trajectories
             axes[i].plot(xs, ys, lw=w, ls=next(lss), color=c, alpha=alph,
                          marker=m, markersize=ms)
             
-            axes[i].scatter(xs[0], ys[0], color=c, marker='x', s=12*w, alpha=alph)
+            if plot_startmarker:
+                axes[i].scatter(xs[0], ys[0], color=c, marker='x', s=12*w, alpha=alph)
             if fprs[j]:
                 axes[i].scatter(xs[-1], ys[-1], color=c, marker='o', s=20*w,
                                 alpha=alph)

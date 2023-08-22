@@ -57,14 +57,29 @@ class strategybase(abase):
         n = jnp.newaxis
         XexpaTDe = Xisa * jnp.exp(self.alpha[:,n,n] * TDe)
         return XexpaTDe / XexpaTDe.sum(-1, keepdims=True), TDe
+    
+    @partial(jit, static_argnums=0)
+    def reverse_step(self,
+                    Xisa  # Joint strategy
+                    ) -> tuple:  # (Updated joint strategy, Prediction error)
+        """
+        Performs a reverse learning step in strategy space,
+        given joint strategy `Xisa`.
+        
+        This is useful to compute the separatrix of a multistable regime. 
+        """
+        TDe = self.RPEisa(Xisa)
+        n = jnp.newaxis
+        XexpaTDe = Xisa * jnp.exp(self.alpha[:,n,n] * -TDe)
+        return XexpaTDe / XexpaTDe.sum(-1, keepdims=True), TDe    
 
-# %% ../../nbs/Agents/10_AStrategyBase.ipynb 8
+# %% ../../nbs/Agents/10_AStrategyBase.ipynb 9
 @patch
 def zero_intelligence_strategy(self:strategybase):
     """Returns strategy `Xisa` with equal action probabilities."""
     return jnp.ones((self.N, self.Z, self.M)) / float(self.M)
 
-# %% ../../nbs/Agents/10_AStrategyBase.ipynb 9
+# %% ../../nbs/Agents/10_AStrategyBase.ipynb 10
 @patch
 def random_softmax_strategy(self:strategybase):
     """Returns softmax strategy `Xisa` with random action probabilities."""
@@ -72,7 +87,7 @@ def random_softmax_strategy(self:strategybase):
     X = expQ / expQ.sum(axis=-1, keepdims=True)
     return jnp.array(X)
 
-# %% ../../nbs/Agents/10_AStrategyBase.ipynb 10
+# %% ../../nbs/Agents/10_AStrategyBase.ipynb 11
 @patch
 def id(self:strategybase
       ) -> str:  # id
