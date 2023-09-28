@@ -79,7 +79,7 @@ env = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)
 mae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)
 
 # Compute learning trajectory 
-x = mae.random_softmax_strategy()  # from a random inital policy
+x = mae.random_softmax_strategy()  # from a random inital strategy
 xtraj, fixedpointreached = mae.trajectory(x)
 
 # PLOT
