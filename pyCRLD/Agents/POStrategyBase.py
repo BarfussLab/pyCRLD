@@ -50,3 +50,17 @@ class POstrategybase(aPObase, strategybase):
         # intensity of choice
         self.beta = make_variable_vector(choice_intensities, self.N)
 
+
+# %% ../../nbs/Agents/11_APOStrategyBase.ipynb 6
+@patch
+def random_softmax_policy(self:POstrategybase):
+            """Softmax policy with random probabilities."""
+            expQ = jnp.exp(np.random.randn(self.N, self.Q, self.M))
+            return expQ / expQ.sum(axis=-1, keepdims=True)
+
+# %% ../../nbs/Agents/11_APOStrategyBase.ipynb 7
+@patch
+def zero_intelligence_policy(self:POstrategybase):
+            """Policy with equal probabilities."""
+            return jnp.ones((self.N, self.Q, self.M)) / float(self.M)
+
