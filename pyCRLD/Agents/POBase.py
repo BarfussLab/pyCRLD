@@ -144,7 +144,7 @@ class aPObase(abase):
         """
         i, s, o = 0, 1, 2 # variables 
         # pS = self.statedist(X) # from full obs base (requires Tss from above)
-        pS = self._jstatedist(X, self._last_statedist)
+        pS = self._jaxPs(X, self._last_statedist)
 
         b = jnp.einsum(self.O, [i,s,o], pS, [s], [i,s,o], optimize=self.opti)
         bsum = b.sum(axis=1, keepdims=True)

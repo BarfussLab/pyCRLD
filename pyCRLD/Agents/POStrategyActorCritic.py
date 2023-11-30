@@ -26,7 +26,7 @@ class POstratAC(POstrategybase):
     """
     
     @partial(jit, static_argnums=(0,2))
-    def TDerror(self, X, norm=False):
+    def RPEioa(self, X, norm=False):
         """
         TD error for partially observable policy AC dynamics,
         given joint policy X
@@ -39,11 +39,11 @@ class POstratAC(POstrategybase):
         NextV = self.NextVioa(X, Bios=Bios, Xisa=Xisa, Vio=Vio)
 
         n = jnp.newaxis
-        TDe = self.pre[:,n,n]*R + self.gamma[:,n,n]*NextV - Vio[:,:,n]
-        TDe *= self.beta[:,n,n]
+        E = self.pre[:,n,n]*R + self.gamma[:,n,n]*NextV - Vio[:,:,n]
+        E *= self.beta[:,n,n]
 
-        TDe = TDe - TDe.mean(axis=2, keepdims=True) if norm else TDe
-        return TDe
+        E = E - E.mean(axis=2, keepdims=True) if norm else E
+        return E
     
     @partial(jit, static_argnums=0)
     def NextVioa(self, X, Xisa=None, Bios=None, Vio=None, 

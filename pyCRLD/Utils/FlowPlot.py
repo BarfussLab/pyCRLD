@@ -43,7 +43,7 @@ def plot_strategy_flow(mae,  # CRLD multi-agent environment object
     axes = _prepare_axes(axes, xlens)
 
     # The Plots
-    difffunc = _dRPEisa_s if use_RPEarrows else _dXisa_s  # which difference function to use
+    difffunc = _dTDerror_s if use_RPEarrows else _dXisa_s  # which difference function to use
     for i, (xinds, yinds) in enumerate(zip(it.product(*x), it.product(*y))): # go through each plot sequentially 
         # obtain the data to plot
         X, Y, dX, dY = _data_to_plot(mae, flowarrow_points, xinds, yinds, NrRandom, difffunc,
@@ -168,11 +168,11 @@ def _dXisa_s(Xisa_s:Iterable, # of joint strategies `Xisa`
     return np.array([mae.step(Xisa)[0] - Xisa for Xisa in Xisa_s])
 
 # %% ../../nbs/Utils/01_UFlowPlot.ipynb 33
-def _dRPEisa_s(Xisa_s:Iterable, # of joint strategies `Xisa`
+def _dTDerror_s(Xisa_s:Iterable, # of joint strategies `Xisa`
               mae  # CRLD multi-agent environment object
             ) -> np.ndarray:  # joint reward-prediction errors
-    """Compute reward-prediction errors `RPEisa_s` for Xs."""
-    return np.array([mae.RPEisa(Xisa, norm=True) for Xisa in Xisa_s])
+    """Compute reward-prediction errors `TDerror_s` for Xs."""
+    return np.array([mae.TDerror(Xisa, norm=True) for Xisa in Xisa_s])
 
 # %% ../../nbs/Utils/01_UFlowPlot.ipynb 36
 def _strategies(mae,  # CRLD multi-agent environment object

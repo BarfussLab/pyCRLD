@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['UncertainSocialDilemma']
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 12
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 22
 from .Base import ebase
 from ..Utils.Helpers import make_variable_vector
 
@@ -13,7 +13,7 @@ from fastcore.test import *
 from typing import Iterable
 import numpy as np
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 13
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 23
 class UncertainSocialDilemma(ebase):
 
     def __init__(self, R1, T1, S1, P1, R2, T2, S2, P2, pC, obsnoise):
@@ -46,18 +46,18 @@ class UncertainSocialDilemma(ebase):
         self.state = 1 # inital state
         super().__init__()
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 14
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 24
 @patch
 def actions(self:UncertainSocialDilemma):
         return [0, 1], ["coop.", "defect."]
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 15
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 25
 @patch
 def states(self:UncertainSocialDilemma):
         return [0, 1], ["no contract", "contract"]
 
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 16
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 26
 @patch
 def TransitionTensor(self:UncertainSocialDilemma):
         """Get the Transition Tensor."""
@@ -68,7 +68,7 @@ def TransitionTensor(self:UncertainSocialDilemma):
 
         return Tsas
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 17
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 27
 @patch
 def RewardTensor(self:UncertainSocialDilemma):
         """Get the Reward Tensor R[i,s,a1,...,aN,s']."""
@@ -89,7 +89,7 @@ def RewardTensor(self:UncertainSocialDilemma):
 
         return R
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 18
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 28
 @patch
 def ObservationTensor(self:UncertainSocialDilemma):
 
@@ -109,7 +109,7 @@ def ObservationTensor(self:UncertainSocialDilemma):
             
         return Oiso
 
-# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 19
+# %% ../../nbs/Environments/12_EnvUncertainSocialDilemma.ipynb 29
 @patch
 def id(self:UncertainSocialDilemma):
     """

@@ -42,6 +42,7 @@ class stratAC(strategybase):
 
         E = E - E.mean(axis=2, keepdims=True) if norm else E
         return E
+
     
     @partial(jit, static_argnums=0)
     def NextVisa(self,

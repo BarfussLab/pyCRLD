@@ -50,6 +50,7 @@ class POstrategybase(aPObase, strategybase):
         # intensity of choice
         self.beta = make_variable_vector(choice_intensities, self.N)
 
+        self.TDerror = self.RPEioa
 
 # %% ../../nbs/Agents/11_APOStrategyBase.ipynb 6
 @patch

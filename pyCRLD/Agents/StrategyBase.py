@@ -44,6 +44,9 @@ class strategybase(abase):
 
         # intensity of choice
         self.beta = make_variable_vector(choice_intensities, self.N)
+
+        
+        self.TDerror = self.RPEisa
         
     @partial(jit, static_argnums=0)
     def step(self,
@@ -53,7 +56,7 @@ class strategybase(abase):
         Performs a learning step along the reward-prediction/temporal-difference error
         in strategy space, given joint strategy `Xisa`.
         """
-        TDe = self.RPEisa(Xisa)
+        TDe = self.TDerror(Xisa)
         n = jnp.newaxis
         XexpaTDe = Xisa * jnp.exp(self.alpha[:,n,n] * TDe)
         return XexpaTDe / XexpaTDe.sum(-1, keepdims=True), TDe
@@ -68,10 +71,10 @@ class strategybase(abase):
         
         This is useful to compute the separatrix of a multistable regime. 
         """
-        TDe = self.RPEisa(Xisa)
+        TDe = self.TDerror(Xisa)
         n = jnp.newaxis
         XexpaTDe = Xisa * jnp.exp(self.alpha[:,n,n] * -TDe)
-        return XexpaTDe / XexpaTDe.sum(-1, keepdims=True), TDe    
+        return XexpaTDe / XexpaTDe.sum(-1, keepdims=True), TDe  
 
 # %% ../../nbs/Agents/10_AStrategyBase.ipynb 9
 @patch
