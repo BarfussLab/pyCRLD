@@ -18,6 +18,15 @@ jobs:
       run: |
         pip install .[dev]
 
+    - name: Checkout submodules
+      run: |
+        git submodule init
+        git submodule update
+
+    - name: List installed packages
+      run: |
+        pip list
+
     # Use --nbval-lax to run notebooks without checking output
     - name: Run notebook tests
       run: |
