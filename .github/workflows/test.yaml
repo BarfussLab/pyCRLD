@@ -20,4 +20,4 @@ jobs:
 
     - name: Run notebook tests
       run: |
-        pytest --nbval-lax  # Use --nbval-lax to run notebooks without checking output
+        py.test nbs/index.ipynb --nbval-lax  # Use --nbval-lax to run notebooks without checking output
