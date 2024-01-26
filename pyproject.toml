@@ -31,5 +31,7 @@ Home = "https://wbarfuss.github.io/pyCRLD/"
 
 [project.optional-dependencies]
 dev = [
-    "nbdev>=2.3.9"
+    "nbdev>=2.3.9",
+    "pytest>=6.0.0",
+    "nbval"
 ]
