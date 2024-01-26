@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=36.2", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyCRLD"
+version = "0.0.1"
+description = "Collective Reinforcement Learning Dynamics in Python"
+authors = [{name = "Wolfram Barfuss", email = "wbarfuss@wbarfuss.com"}]
+license = {text = "GPL-3.0 license"}
+readme = "README.md"
+requires-python = ">=3.10"
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GPL-3.0 license",
+]
+
+dependencies = [
+    "fastcore>=1.5.27",
+    "numpy>=1.21.2",
+    "jax>=0.3.25",
+    "jaxlib>=0.3.25",
+    "matplotlib>=3.4.3",
+    "pydoe>=0.3.8",
+]
+
+[project.urls]
+Home = "https://wbarfuss.github.io/pyCRLD/"
+
+[project.optional-dependencies]
+dev = [
+    "nbdev>=2.3.9"
+]
