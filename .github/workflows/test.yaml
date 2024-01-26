@@ -18,6 +18,7 @@ jobs:
       run: |
         pip install .[dev]
 
+    # Use --nbval-lax to run notebooks without checking output
     - name: Run notebook tests
       run: |
-        py.test nbs/index.ipynb --nbval-lax  # Use --nbval-lax to run notebooks without checking output
+        pytest --nbval-lax --pyargs nbs --ignore=nbs/.ipynb_checkpoints
