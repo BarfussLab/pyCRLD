@@ -6,7 +6,10 @@ website:
         contents:
           - Agents/01_AStrategyActorCritic.ipynb
           - Agents/02_AStrategySARSA.ipynb
+          - Agents/04_APOStrategyActorCritic.ipynb
           - Agents/10_AStrategyBase.ipynb
+          - Agents/11_APOStrategyBase.ipynb
+          - Agents/98_APOBase.ipynb
           - Agents/99_ABase.ipynb
       - section: Environments
         contents:
@@ -14,6 +17,7 @@ website:
           - Environments/01_EnvHistoryEmbedding.ipynb
           - Environments/10_EnvSocialDilemma.ipynb
           - Environments/11_EnvEcologicalPublicGood.ipynb
+          - Environments/12_EnvUncertainSocialDilemma.ipynb
       - section: Utils
         contents:
           - Utils/01_UFlowPlot.ipynb
