@@ -25,12 +25,6 @@ class MultipleObsSocialDilemma(HeterogeneousObservationsEnv):
                  suckers_payoff:float,  # sucker's payoff of unilateral cooperation
                  punishment:float): # punsihment of mutual defection
 
-
-        self.reward = reward
-        self.temptation = temptation
-        self.suckers_payoff = suckers_payoff
-        self.punishment = punishment
-
         # TODO: these variables are expected to be already initialized in the parent class
         # causing a recursive calling and causing the dependency on them to fail
         # therefore we need to initialize them here

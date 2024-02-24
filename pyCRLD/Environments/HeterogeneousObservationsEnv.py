@@ -9,7 +9,18 @@ import numpy as np
 
 # %% ../../nbs/Environments/02_HeterogeneousObservationsEnv.ipynb 4
 class HeterogeneousObservationsEnv(object):
-    def __init__(self, observation_confidence=None):
+    def __init__(self,
+         reward:float,  # reward of mutual cooperation
+         temptation:float,  # temptation of unilateral defection 
+         suckers_payoff:float,  # sucker's payoff of unilateral cooperation
+         punishment:float,
+         observation_confidence=None):
+
+        self.reward = reward
+        self.temptation = temptation
+        self.suckers_payoff = suckers_payoff
+        self.punishment = punishment
+
         self.transitions = self.transition_tensor()
         self.final_states = np.array(self.generate_final_states())
         self.rewards = self.reward_tensor()
@@ -105,21 +116,6 @@ def states(self:HeterogeneousObservationsEnv):
     return [str(s) for s in range(self.n_states)]
 
 @patch
-# def generate_observation_labels(self:HeterogeneousObservationsEnv):
-#     """
-#     Creates observation label sets for each agent based on the observation tensors. This method generates
-#     a structured representation of all possible observations for each agent, where each observation is
-#     uniquely labeled.
-#     """
-#     n_observations_list = [obs.shape[-1] for obs in self.observations_list]
-#     observation_label_sets = []
-#     for num_observations_per_tensor in n_observations_list:
-#         # For each observation setting defined by the observation tensors, generate a set of observation labels
-#         # for each agent, labeling them from 0 to num_observations_per_tensor - 1.
-#         agent_observation_labels = [[str(observation_id) for observation_id in range(num_observations_per_tensor)] 
-#                                     for _ in range(self.n_agents)]
-#         observation_label_sets.append(agent_observation_labels)
-#     return observation_label_sets
 def generate_observation_labels(self:HeterogeneousObservationsEnv):
     """Creates observation labels."""
     return [[str(o) for o in range(self.n_observations)] for _ in range(self.n_agents)]
