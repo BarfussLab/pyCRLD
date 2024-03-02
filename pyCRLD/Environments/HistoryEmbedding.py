@@ -273,7 +273,7 @@ def hOset(env, h):
                     hrep += env.Aset[i][hist[n]] if hist[n]!="." else ''
                     hrep += ','
                 # second: append observation
-                hrep += env.Oset[agent][hist[n+1]] if hist[n+1]!="." else ''
+                hrep += str(env.Oset[agent][hist[n+1]]) if hist[n+1] != "." else ''
                 hrep += '|'
             hists.append(hrep)
         all_hists.append(hists)
