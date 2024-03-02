@@ -9,39 +9,24 @@ import numpy as np
 
 # %% ../../nbs/Environments/02_HeterogeneousObservationsEnv.ipynb 4
 class HeterogeneousObservationsEnv(object):
-    def __init__(self,
-         reward:float,  # reward of mutual cooperation
-         temptation:float,  # temptation of unilateral defection 
-         suckers_payoff:float,  # sucker's payoff of unilateral cooperation
-         punishment:float,
-         observation_confidence=None):
-
-        self.reward = reward
-        self.temptation = temptation
-        self.suckers_payoff = suckers_payoff
-        self.punishment = punishment
+    def __init__(self, observation_opacity):
 
         self.transitions = self.transition_tensor()
         self.final_states = np.array(self.generate_final_states())
         self.rewards = self.reward_tensor()
-        self.observations = self.generate_observation_tensors()
+        self.observations = self.generate_observation_tensor()
 
         self.actions_set = self.actions()
         self.states_set = self.states() 
-        self.observations_set = self.generate_observation_labels()
+        self.observation_labels = self.generate_observation_labels()
 
         self.n_agents = self.rewards.shape[0]
         self.n_states = self.transitions.shape[0]
         self.n_agent_actions = self.transitions.shape[1]
 
-        self.defaultObsTensUsed
+        self.observation_opacity = observation_opacity
 
-        # By default, agents are fully observable
-        if observation_confidence is None:
-            self.observation_confidence = [1] * self.n_agents
-        else:
-            self.observation_confidence = observation_confidence
-        assert self.observation_confidence == self.n_agents, 'Observation confidences need to be specified for all agents or for none and receive the full observability as a default value'
+        self.n_possible_observations = self.n_states
 
         # Checks
         # assert all(self.transitions.shape[1:-1] == self.n_agent_actions for _ in range(self.n_agents)), 'Inconsistent number of actions'
@@ -53,6 +38,19 @@ class HeterogeneousObservationsEnv(object):
         assert len(self.states_set) == self.n_states, 'Inconsistent number of states'
         assert np.allclose(self.transitions.sum(-1), 1), 'Transition model probabilities do not sum to 1'
 
+        # Ensure naming compatibility with the rest of PyCRDT
+        self.R = self.rewards
+        self.N = self.n_agents
+        self.F = self.final_states
+        self.M = self.n_agent_actions
+        self.Z = self.n_states
+        self.T = self.transitions
+        self.O = self.observations
+        self.Oset = self.observations
+        self.Q = self.n_possible_observations
+        self.Aset = self.actions_set
+        self.Sset = self.states_set
+        
         #     assert obs.shape[0] == self.n_agents, "Inconsistent number of agents"
         #     assert obs.shape[1] == self.n_states, "Inconsistent number of states"
         #     assert np.allclose(obs.sum(-1), 1), 'Observation model probabilities do not sum to 1'
@@ -72,7 +70,6 @@ def __repr__(self:HeterogeneousObservationsEnv): return self.id()
 @patch
 def transition_tensor(self:HeterogeneousObservationsEnv):
     raise NotImplementedError
-
 @patch
 def reward_tensor(self:HeterogeneousObservationsEnv):
     raise NotImplementedError
@@ -81,23 +78,38 @@ def reward_tensor(self:HeterogeneousObservationsEnv):
 def generate_observation_tensor(self:HeterogeneousObservationsEnv):
     """
     Generates the observation tensor for the environment. The tensor represents the probability distribution over possible
-    observations given the actual state of the environment. The shape of the tensor depends on the observation confidence 
-    of each agent.
+    observations given the actual state of the environment. The configuration of the tensor is influenced by the observation
+    confidence of each agent, which is now a list of floats, with each float indicating the confidence level of the corresponding
+    agent.
     """
-    if np.all(self.noise > 0.5):
-        self.n_observations = 1
-        observations_iso = np.ones((self.n_agents, self.n_states, self.n_observations))
-        
-    else:
-        self.n_observations = self.n_states
-        observations_iso = np.zeros((self.n_agents, self.n_states, self.n_observations))
+    self.n_possible_observations = self.n_states
     
-        for i in range(self.n_agents):
-            observations_iso[i,0,0] = 1 - min(self.observation_confidence[i], 0.5)
-            observations_iso[i,0,1] = 0 + min(self.observation_confidence[i], 0.5)
-            observations_iso[i,1,0] = 0 + min(self.observation_confidence[i], 0.5)
-            observations_iso[i,1,1] = 1 - min(self.observation_confidence[i], 0.5)
-        
+    # if np.all(np.array(self.observation_confidence) > 0.5):
+    #     self.n_observations = 1
+    #     observations_iso = np.ones((self.n_agents, self.n_states, self.n_observations))
+    # else:
+    # Otherwise, set the number of observations equal to the number of states,
+    # indicating a more detailed observation model.
+    observations_iso = np.zeros((self.n_agents, self.n_states, self.n_possible_observations))
+
+    for agent_index in range(self.n_agents):
+        print('for agent ', agent_index)
+        # For each agent, configure the observation probabilities based on their individual observation confidence.
+        # Adjust the observation tensor accordingly. The following assumes a binary state space for simplicity.
+        # This logic may need to be extended for environments with more than two states.
+        confidence = self.observation_opacity[agent_index]
+        print('confidence is ,', confidence)
+        print(self.n_agents, self.n_states, self.n_possible_observations)
+        # observations_iso = np.zeros((self.n_agents, self.n_states, self.n_observations))
+        # print(f'observations_iso[{agent_index}, 0, 0] {1 - min(confidence, 0.5)}')
+        # print(f'observations_iso[{agent_index}, 0, 1] {0 + min(confidence, 0.5)}')
+        # print(f'observations_iso[{agent_index}, 1, 0] {0 + min(confidence, 0.5)}')
+        # print(f'observations_iso[{agent_index}, 1, 1] {1 - min(confidence, 0.5)}')
+        observations_iso[agent_index, 0, 0] = 1 - min(confidence, 0.5)
+        observations_iso[agent_index, 0, 1] = 0 + min(confidence, 0.5)
+        observations_iso[agent_index, 1, 0] = 0 + min(confidence, 0.5)
+        observations_iso[agent_index, 1, 1] = 1 - min(confidence, 0.5)
+    
     return observations_iso
 
 @patch
@@ -118,7 +130,7 @@ def states(self:HeterogeneousObservationsEnv):
 @patch
 def generate_observation_labels(self:HeterogeneousObservationsEnv):
     """Creates observation labels."""
-    return [[str(o) for o in range(self.n_observations)] for _ in range(self.n_agents)]
+    return [[str(o) for o in range(self.n_possible_observations)] for _ in range(self.n_agents)]
 
 @patch
 def step(self:HeterogeneousObservationsEnv, jA:Iterable) -> tuple:
@@ -142,6 +154,8 @@ def generate_stochastic_observations(self:HeterogeneousObservationsEnv) -> np.nd
     Returns:
         A list of numpy arrays, where each array contains observations for all agents as determined by one of the observation tensors.
     """
+    # TODO: I want to make sure observations are being generated correctly here
+
     all_agents_observations = []  # Stores observations generated by each observation tensor.
     for observation_tensor in self.observations_list:
         current_state_observations = np.zeros(self.n_agents, dtype=int)  # Initializes the observation array for this tensor.
