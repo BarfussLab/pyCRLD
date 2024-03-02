@@ -43,10 +43,16 @@ class MultipleObsSocialDilemma(HeterogeneousObservationsEnv):
         self.n_agent_actions = 2
         self.n_states = 2 # TODO: I'm not entirely sure on why we have 2 states here
         
-
-        self.pC = pC  # prop. contract TODO: no idea what this is    
+        self.observation_opacity = observation_opacity
+        self.pC = pC  # prop. for contract
+        # This adds a dynamic aspect to the game where the outcome can also depend on the evolving 
+        # relationship state (contract or no contract).
+        # In the Uncertain Env. a state is either contracted or not, this indicate whether there is an agreement
+        # or alignment between the agents, which could influence their strategic decisions. This state aspect
+        # goes beyond the classic IPD setup, where such external conditions or states do not typically change
+        # the payoffs directly within a single round.
         self.state = 0 # initial state
-        super().__init__(observation_opacity=observation_opacity)
+        super(MultipleObsSocialDilemma, self).__init__(observation_opacity=observation_opacity)
 
 
 # %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 7
@@ -72,6 +78,9 @@ def reward_tensor(self:MultipleObsSocialDilemma):
     # and another matrix containing all actions D. So I'm assuming a game can be in either C state or D state?
     # though I thought IPD only had one state '.'. This is where my confusion lies.
     # I also don't fully understand how these arrays are filled. I should print R and check.
+
+    # TODO: I wonder if it's the different values that this reward tensors receive that's messing up
+    # my values further on
     
     # set reward matrix for agent 0
     R[0, 0, :, :, 0] = [[self.rewards[0], self.suckers_payoffs[0]],
@@ -96,9 +105,8 @@ def actions(self:MultipleObsSocialDilemma):
 
 @patch
 def states(self:MultipleObsSocialDilemma):
-    """Default state set representation."""
-    # States for two agents in a IPD game never change
-    return ['.', '.']
+    """The states set"""
+    return [0, 1], ["no contract", "contract"] # TODO: I don't understand why we use 2 states?
 
 @patch
 def id(self:MultipleObsSocialDilemma):
