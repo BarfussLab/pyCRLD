@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['MultipleObsSocialDilemma']
 
-# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 5
+# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 6
 from .Base import ebase
 
 from fastcore.utils import *
@@ -13,55 +13,62 @@ from .HeterogeneousObservationsEnv import HeterogeneousObservationsEnv
 
 import numpy as np
 
-# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 6
+# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 7
 class MultipleObsSocialDilemma(HeterogeneousObservationsEnv):
     """
     Symmetric 2-agent 2-action Social Dilemma Matrix Game.
     """
     def __init__(self,
-                 rewards,  # rewards of mutual cooperation
-                 temptations,  # temptations of unilateral defection
-                 suckers_payoffs,  # sucker's payoff of unilateral cooperation
-                 punishments,  # punishment of mutual defection
-                 pC=0.5,
-                 observation_opacity=None):
+                 rewards, # reward of mutual cooperation
+                 temptations, # temptation of unilateral defection
+                 suckers_payoffs, # sucker's payoff of unilateral cooperation
+                 punishments, # punishment of mutual defection
+                 contract_probability = 0.5, # probability for contract
+                 observation_type='default', # type of observability matrix
+                 observation_value=None): # partial or full observability
 
-        # Normalize inputs to be lists of length 2
-        self.rewards = [rewards, rewards] if isinstance(rewards, int) else rewards
-        self.temptations = [temptations, temptations] if isinstance(temptations, int) else temptations
-        self.suckers_payoffs = [suckers_payoffs, suckers_payoffs] if isinstance(suckers_payoffs, int) else suckers_payoffs
-        self.punishments = [punishments, punishments] if isinstance(punishments, int) else punishments
-
-        # Ensuring all are lists of size 2 for consistency
-        if not all(len(lst) == 2 for lst in [self.rewards, self.temptations, self.suckers_payoffs, self.punishments]):
-            raise ValueError("All parameters must either be a single integer or a list of two integers.")
+        # Validate each attribute to ensure it is either an integer or a list of two integers
+        def validate_attribute(attribute):
+            if isinstance(attribute, list) and len(attribute) == 2:
+                return attribute
+            elif isinstance(attribute, (int, float, complex)):
+                return [attribute]
+            else:
+                raise ValueError("Attribute must be a single integer or a list of two integers.")
+        
+        # Applying the validation to each attribute
+        self.rewards = validate_attribute(rewards)
+        self.temptations = validate_attribute(temptations)
+        self.suckers_payoffs = validate_attribute(suckers_payoffs)
+        self.punishments = validate_attribute(punishments)
 
         # TODO: these variables are expected to be already initialized in the parent class
         # causing a recursive calling and causing the dependency on them to fail
-        # therefore we need to initialize them here
+        # therefore we need to initialize them here. In the future this should be addressed
         self.n_agents = 2
         self.n_agent_actions = 2
-        self.n_states = 2 # TODO: I'm not entirely sure on why we have 2 states here
+        self.n_states = len(self.rewards)
         
-        self.observation_opacity = observation_opacity
-        self.pC = pC  # prop. for contract
-        # This adds a dynamic aspect to the game where the outcome can also depend on the evolving 
+        # The contract_probability adds a dynamic aspect to the game where the outcome can also depend on the evolving 
         # relationship state (contract or no contract).
-        # In the Uncertain Env. a state is either contracted or not, this indicate whether there is an agreement
-        # or alignment between the agents, which could influence their strategic decisions. This state aspect
-        # goes beyond the classic IPD setup, where such external conditions or states do not typically change
-        # the payoffs directly within a single round.
+        # A state can be either contracted or not, or have the default state '.'. The contract indicate whether
+        # there is an agreement or alignment between the agents, which could influence their strategic decisions.
+        self.contract_probability = contract_probability
         self.state = 0 # initial state
-        super(MultipleObsSocialDilemma, self).__init__(observation_opacity=observation_opacity)
 
+        super().__init__(observation_type=observation_type, observation_value=observation_value)
 
-# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 7
+# %% ../../nbs/Environments/12_MultipleObsSocialDilemma.ipynb 8
 @patch
 def transition_tensor(self:MultipleObsSocialDilemma):
     """Calculate the Transition Tensor"""
-    Tsas = np.ones((2, 2, 2, 2)) * (-1)
-    Tsas[:, :, :, 0] = 1 - self.pC
-    Tsas[:, :, :, 1] = self.pC
+    if self.n_states == 1:
+        Tsas = np.ones((self.n_states, self.n_agent_actions, self.n_agent_actions, self.n_states))
+    # Case for contract/no-contract states
+    else:
+        Tsas = np.ones((self.n_states, self.n_agent_actions, self.n_agent_actions, self.n_states)) * (-1)
+        Tsas[:, :, :, 0] = 1 - self.contract_probability
+        Tsas[:, :, :, 1] = self.contract_probability
     return Tsas
 
 @patch
@@ -70,33 +77,28 @@ def reward_tensor(self:MultipleObsSocialDilemma):
 
     R = np.zeros((self.n_agents, self.n_states, self.n_agent_actions, self.n_agent_actions, self.n_states))
 
-    # TODO: the way these arrays are defined is invalid code and I dont want to figure out why
-
-    # TODO: in general i don't understand the construction of these arrays. What does : do anyway?
-    # ok so the cmd above creates two arrays (n_agents) of a two dimensional space that is indicating the number
-    # of states, for each action an agent can take... So we have one matrix that contains all actions C 
-    # and another matrix containing all actions D. So I'm assuming a game can be in either C state or D state?
-    # though I thought IPD only had one state '.'. This is where my confusion lies.
-    # I also don't fully understand how these arrays are filled. I should print R and check.
-
-    # TODO: I wonder if it's the different values that this reward tensors receive that's messing up
-    # my values further on
+    if self.n_states == 1:
+        R[0, 0, :, :, 0] = [[self.rewards[0], self.suckers_payoffs[0]],
+                            [self.temptations[0], self.punishments[0]]]
+        R[1, 0, :, :, 0] = [[self.rewards[0], self.temptations[0]],
+                            [self.suckers_payoffs[0], self.punishments[0]]]
+    else:
+        # set reward matrix for agents in first (no-contract) state
+        R[0, 0, :, :, 0] = [[self.rewards[0], self.suckers_payoffs[0]],
+                            [self.temptations[0], self.punishments[0]]]
+        R[1, 0, :, :, 0] = [[self.rewards[0], self.temptations[0]],
+                            [self.suckers_payoffs[0], self.punishments[0]]]
+        R[:, 0, :, :, 1] = R[:, 0, :, :, 0]
     
-    # set reward matrix for agent 0
-    R[0, 0, :, :, 0] = [[self.rewards[0], self.suckers_payoffs[0]],
-                        [self.temptations[0], self.punishments[0]]]
-    R[1, 0, :, :, 0] = [[self.rewards[0], self.temptations[0]],
-                        [self.suckers_payoffs[0], self.punishments[0]]]
-    R[:, 0, :, :, 1] = R[:, 0, :, :, 0]
-
-    # set reward matrix for agent 1 in the second state
-    R[0, 1, :, :, 1] = [[self.rewards[1], self.suckers_payoffs[1]],
-                        [self.temptations[1], self.punishments[1]]]
-    R[1, 1, :, :, 1] = [[self.rewards[1], self.temptations[1]],
-                        [self.suckers_payoffs[1], self.punishments[1]]]
-    R[:, 1, :, :, 0] = R[:, 1, :, :, 1]
-    
+        # set reward matrix for agents the second (contract) state
+        R[0, 1, :, :, 1] = [[self.rewards[1], self.suckers_payoffs[1]],
+                            [self.temptations[1], self.punishments[1]]]
+        R[1, 1, :, :, 1] = [[self.rewards[1], self.temptations[1]],
+                            [self.suckers_payoffs[1], self.punishments[1]]]
+        R[:, 1, :, :, 0] = R[:, 1, :, :, 1]
+        
     return R
+
 
 @patch
 def actions(self:MultipleObsSocialDilemma):
@@ -106,7 +108,13 @@ def actions(self:MultipleObsSocialDilemma):
 @patch
 def states(self:MultipleObsSocialDilemma):
     """The states set"""
-    return [0, 1], ["no contract", "contract"] # TODO: I don't understand why we use 2 states?
+    # Check whether the game has 2 rewards, this is equivalent of checking any of the
+    # other game values and equivalent to checking if the number of states should be 2
+    if self.n_states == 2:
+        return [0, 1], ["no contract", "contract"]
+    # Otherwise we default to the unique IPD state
+    else:
+        return ['.']
 
 @patch
 def id(self:MultipleObsSocialDilemma):

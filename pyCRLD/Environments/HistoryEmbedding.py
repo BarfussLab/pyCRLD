@@ -4,7 +4,7 @@
 __all__ = ['StateActHistsIx', 'hSset', 'histSjA_TransitionTensor', 'histSjA_RewardTensor', 'ObsActHistsIx', 'hOset',
            'histSjA_ObservationTensor', 'HistoryEmbedded']
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 28
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 27
 import numpy as np
 import itertools as it
 from fastcore.utils import *
@@ -12,7 +12,7 @@ from fastcore.test import *
 
 from .Base import ebase
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 32
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 31
 def _get_all_histories(env, # An environment
                        h,  # A history specification
                        attr='Z'): #
@@ -43,7 +43,7 @@ def _get_all_histories(env, # An environment
     hists = list(it.product(*hiter)) 
     return hists
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 47
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 46
 def _hist_contains_NotPossibleTrans(env, # An environment 
                                     hist:Iterable  # A history
                                    ) -> bool:  # History impossible?
@@ -77,7 +77,7 @@ def _hist_contains_NotPossibleTrans(env, # An environment
             s = s_
     return contains
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 55
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 54
 def StateActHistsIx(env, h):
     """
     Returns all state-action histories (in indices) of `env`.
@@ -99,7 +99,7 @@ def StateActHistsIx(env, h):
     return PossibleHists
 
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 65
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 64
 def hSset(env, # An environment 
           h):  # A history specificaiton
     '''
@@ -123,7 +123,7 @@ def hSset(env, # An environment
     
     return hists
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 70
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 69
 def histSjA_TransitionTensor(env, h):
     """
     Returns Transition Tensor of `env` with state-action history specification `h`.
@@ -182,7 +182,7 @@ def _transition_ix(env, h, i, hist, j, hist_):
 
     return tuple(hix), tuple(ix)
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 75
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 74
 def histSjA_RewardTensor(env, h):
     """
     Returns Reward Tensor of `env` with state-action history specification `h`.
@@ -213,7 +213,7 @@ def histSjA_RewardTensor(env, h):
     
     return Rh
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 81
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 80
 def ObsActHistsIx(env, h):
     """
     Returns all obs-action histories of `env`.
@@ -257,7 +257,7 @@ def ObsActHistsIx(env, h):
             PossibleOAHists.remove(oahist)
     return PossibleOAHists
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 83
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 82
 def hOset(env, h):
     hmax = max(h)
     
@@ -280,7 +280,7 @@ def hOset(env, h):
     
     return all_hists
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 85
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 84
 def histSjA_ObservationTensor(env, h):
     """
     Returns Observation Tensor of `env` with state-action history `h`[iterable]
@@ -308,7 +308,7 @@ def histSjA_ObservationTensor(env, h):
     return Oh           
 
 
-# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 88
+# %% ../../nbs/Environments/01_EnvHistoryEmbedding.ipynb 87
 class HistoryEmbedded(ebase):
     """
     Abstract Environment wrapper to embed a given environment into a larger
@@ -318,12 +318,13 @@ class HistoryEmbedded(ebase):
     The first element of `history` specifies the length of the state-history.
     Subsequent elements specify the length of the respective action-history
     """
-    
-    def __init__(self, 
-                 env, # An environment
-                 h):  # History specification
+    def __init__(self, env, h, observation_type=None, observation_value=None):
+
         self.baseenv = env
         self.h = h
+        self.observation_type = observation_type
+        # Flatten observation list from environment
+        self.observation_value = [float(item) for sublist in self.baseenv.O for item in sublist.flatten()]
         
         self.N = self.baseenv.N
         self.M = self.baseenv.M
@@ -346,10 +347,64 @@ class HistoryEmbedded(ebase):
     
     def RewardTensor(self):
         return histSjA_RewardTensor(self.baseenv, self.h)
-    
+
     def ObservationTensor(self):
-        return histSjA_ObservationTensor(self.baseenv, self.h)
+        # Default to base environment's observation tensor if no type is specified
+        if not self.observation_type:
+            return histSjA_ObservationTensor(self.baseenv, self.h)
     
+        hmax = max(self.h)  # the maximum history length
+        l = (self.baseenv.N + 1) * hmax  # length of a single history representation
+    
+        SAhists = StateActHistsIx(self.baseenv, self.h)
+        OAhists = ObsActHistsIx(self.baseenv, self.h)
+    
+        Qh = len(OAhists)
+        Zh = len(SAhists)
+        Oh = np.zeros((self.baseenv.N, Zh, Qh))
+    
+        # Check if observation_type and observation_value are lists
+        if isinstance(self.observation_type, list) and isinstance(self.observation_value, list):
+            for agent_index, (obs_type, focused_value) in enumerate(zip(self.observation_type, self.observation_value)):
+                if obs_type == 'default':
+                    for state_index in range(Zh):
+                        Oh[agent_index, state_index, state_index] = focused_value
+    
+                        # Equal distribution value to be applied to the rest of the matrix
+                        val = (1 - focused_value) / (Qh - 1)
+                        Oh[agent_index, state_index, :] = np.where(Oh[agent_index, state_index, :] == 0, val, Oh[agent_index, state_index, :])
+    
+                elif obs_type == 'diagonal_confidence':
+                    for state_index in range(Zh):
+                        Oh[agent_index, state_index, state_index] = focused_value
+    
+                elif obs_type == 'fill':
+                    Oh[agent_index, :, :] = focused_value
+    
+        else:
+            # Handle the case where observation_type and observation_value are single values
+            obs_type = self.observation_type
+            focused_value = self.observation_value[0]  # Assuming observation_value is a list
+    
+            if obs_type == 'default':
+                for agent_index in range(self.baseenv.N):
+                    for state_index in range(Zh):
+                        Oh[agent_index, state_index, state_index] = focused_value
+    
+                        # Equal distribution value to be applied to the rest of the matrix
+                        val = (1 - focused_value) / (Qh - 1)
+                        Oh[agent_index, state_index, :] = np.where(Oh[agent_index, state_index, :] == 0, val, Oh[agent_index, state_index, :])
+    
+            elif obs_type == 'diagonal_confidence':
+                for agent_index in range(self.baseenv.N):
+                    for state_index in range(Zh):
+                        Oh[agent_index, state_index, state_index] = focused_value
+    
+            elif obs_type == 'fill':
+                Oh[:, :, :] = focused_value
+    
+        return Oh
+
     def id(self):
         id = f"{self.__class__.__name__}{self.baseenv.id()}_h{self.h}"
         return id
