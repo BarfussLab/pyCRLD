@@ -38,8 +38,8 @@ class HeterogeneousObservationsEnv(object):
         assert len(self.final_states) == self.n_states, 'Inconsistent number of states'
         assert len(self.states_set) == self.n_states, 'Inconsistent number of states'
         assert np.allclose(self.transitions.sum(-1), 1), 'Transition model probabilities do not sum to 1'
-        assert observations.shape[0] == self.n_agents, "Inconsistent number of agents"
-        assert observations.shape[1] == self.n_states, "Inconsistent number of states"
+        assert self.observations.shape[0] == self.n_agents, "Inconsistent number of agents"
+        assert self.observations.shape[1] == self.n_states, "Inconsistent number of states"
         assert np.allclose(observations.sum(-1), 1), 'Observation model probabilities do not sum to 1'
 
         # Ensure naming compatibility with the rest of PyCRDT
