@@ -5,6 +5,7 @@ _proc/
 .gitattributes
 .last_checked
 .gitconfig
+.jupyter
 *.bak
 *.log
 *~
