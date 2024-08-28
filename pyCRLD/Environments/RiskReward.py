@@ -63,7 +63,7 @@ def RewardTensor(self:RiskReward):
         R[0, 0, 0, 0] = self.rs  # Prosperous and cautious
         R[0, 0, 1, 0] = self.rr  # Prosperous and risky but stays
         R[0, 0, 1, 1] = self.rd  # Prosperous and risky but collapses
-        R[0, 1, :, 1] = self.rd  # Degraded state rewards
+        R[0, 1, :, :] = self.rd  # Degraded state rewards
         return R
 
 
