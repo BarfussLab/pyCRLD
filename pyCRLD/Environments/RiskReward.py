@@ -5,7 +5,6 @@ __all__ = ['RiskReward']
 
 # %% ../../nbs/Environments/13_EnvRiskReward.ipynb 5
 from .Base import ebase
-from ..Utils.Helpers import make_variable_vector
 
 from fastcore.utils import *
 from fastcore.test import *
