@@ -20,6 +20,7 @@ website:
           - Environments/10_EnvSocialDilemma.ipynb
           - Environments/11_EnvEcologicalPublicGood.ipynb
           - Environments/12_EnvUncertainSocialDilemma.ipynb
+          - Environments/13_EnvRenewableRessources.ipynb
       - section: Utils
         contents:
           - Utils/01_UFlowPlot.ipynb
