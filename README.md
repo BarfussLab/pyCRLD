@@ -79,8 +79,9 @@ env = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)
 mae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)
 
 # Compute learning trajectory 
+np.random.seed(0)
 x = mae.random_softmax_strategy()  # from a random inital strategy
-xtraj, fixedpointreached = mae.trajectory(x)
+xtraj, fixedpointreached = mae.trajectory(x, Tmax=10000, tolerance=1e-5)
 
 # PLOT
 fig, axs = plt.subplots(1,2, figsize=(9,4))
@@ -89,7 +90,7 @@ plt.subplots_adjust(wspace=0.3)
 # Plot in phase space
 x = ([0], [0], [0])
 y = ([1], [0], [0])
-ax = fp.plot_strategy_flow(mae, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), axes=[axs[0]])
+ax = fp.plot_strategy_flow(mae, x, y, use_RPEarrows=False, flowarrow_points = np.linspace(0.01 ,0.99, 9), axes=[axs[0]])
 fp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);
 ax[0].set_xlabel("Agent 0's cooperation probability")
 ax[0].set_ylabel("Agent 1's cooperation probability");
