@@ -105,6 +105,8 @@ axs[1].legend()
 axs[1].set_title("Trajectory");
 ```
 
+![](index_files/figure-commonmark/cell-2-output-1.png)
+
 We see how the learning trajectories on the right result from the flow
 on the left, which suggests that in this environment, mutual cooperation
 and mutual defection are viable solutions, depending on the initial
