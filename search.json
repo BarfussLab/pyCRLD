@@ -1,0 +1,472 @@
+[
+  {
+    "objectID": "Environments/envriskreward.html",
+    "href": "Environments/envriskreward.html",
+    "title": "Risk Reward Dilemma",
+    "section": "",
+    "text": "Implementation\n\nsource\n\nRiskReward\n\n RiskReward (pc:float, pr:float, rs:float, rr:float, rd:float)\n\nAn MDP model for decision-making under uncertainty with two states (prosperous and degraded) and two actions (cautious and risky).\n\nsource\n\n\nRiskReward.TransitionTensor\n\n RiskReward.TransitionTensor ()\n\nDefine the Transition Tensor for the MDP.\n\nsource\n\n\nRiskReward.RewardTensor\n\n RiskReward.RewardTensor ()\n\nDefine the Reward Tensor for the MDP.\n\nsource\n\n\nRiskReward.actions\n\n RiskReward.actions ()\n\nDefine the actions available in the MDP.\n\nsource\n\n\nRiskReward.states\n\n RiskReward.states ()\n\nDefine the states of the MDP.\n\nsource\n\n\nRiskReward.id\n\n RiskReward.id ()\n\nProvide an identifier for the environment.\n\n\n\nExample\n\nenv = RiskReward(pc=0.3,pr=.1,rs=0.6,rr=0.8,rd=0.001)\n# pc, pr, rs, rr, rd\n\n\nenv.id()\n\n'RiskReward_pc0.3_pr0.1_rs0.6_rr0.8_rd0.001'\n\n\n\nenv.TransitionTensor()\n\narray([[[1. , 0. ],\n        [0.7, 0.3]],\n\n       [[0.1, 0.9],\n        [0. , 1. ]]])\n\n\n\nenv.RewardTensor()[0]\n\narray([[[0.6  , 0.   ],\n        [0.8  , 0.001]],\n\n       [[0.001, 0.001],\n        [0.001, 0.001]]])\n\n\n\nenv.actions()\n\n[['cautious', 'risky']]\n\n\n\nenv.states()\n\n['prosperous', 'degraded']",
+    "crumbs": [
+      "Environments",
+      "Risk Reward Dilemma"
+    ]
+  },
+  {
+    "objectID": "Environments/envhistoryembedding.html",
+    "href": "Environments/envhistoryembedding.html",
+    "title": "History Embedding",
+    "section": "",
+    "text": "import numpy as np\nimport matplotlib.pyplot as plt\n\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\nfrom pyCRLD.Environments.EcologicalPublicGood import EcologicalPublicGood\n\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Utils import FlowPlot as fp\n\nnp.random.seed(42)\n\n\nfrom pyCRLD.Environments.HistoryEmbedding import HistoryEmbedded\n\n\nsocdi = SocialDilemma(R=1.0, T=1.2, S=-0.5, P=0.0)\necopg = EcologicalPublicGood(N=2, f=1.2, c=5, m=-5, qc=0.2, qr=0.1)\n\n\n\nWith history embedding, we can wrap the standard normal form social dilemma envrionment into one, where the agents condition their action on the actions of the last rounds\n\nmemo1pd = HistoryEmbedded(socdi, h=(1,1,1))\n\nwhich has effectively a state set with the four elements\n\nmemo1pd.Sset\n\n['c,c,.|', 'c,d,.|', 'd,c,.|', 'd,d,.|']\n\n\nAs you can see in the flow plots, this opens the possiblity for cooperation:\n\nmae1 = stratAC(env=memo1pd, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0,1,2,3], [0])\ny = ([1], [0,1,2,3], [0])\nax = fp.plot_strategy_flow(mae1, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32,\n                           conds=mae1.env.Sset)\n\n\n\n\n\n\n\n\nIn contrast to the case where agents do not react to the actions of the past round. Here, the only strategy the agents learn is defection:\n\nnp.random.seed(42)\nmae0 = stratAC(env=socdi, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nax = fp.plot_strategy_flow(mae0, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32)\n\n\n\n\n\n\n\n\nWhat is the effect of having longer action histories?\n\nhlen = 2\nmemoXpd = HistoryEmbedded(socdi, h=(1, hlen, hlen))\nprint( len(memoXpd.Sset) )\n\n16\n\n\n\nmaeX = stratAC(env=memoXpd, learning_rates=0.1, discount_factors=0.9)\n\nfig, ax = plt.subplots(1,1, figsize=(8,9))\nfaps = np.linspace(0.01 ,0.99, 13)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nfp.plot_strategy_flow(mae1, x, y, flowarrow_points=faps, NrRandom=32, cmap=\"Blues\", axes=[ax])\nfp.plot_strategy_flow(maeX, x, y, flowarrow_points=faps, NrRandom=32, cmap=\"Reds\", axes=[ax]);\nax.set_xlabel(\"Agent 0's cooperation probability\")\nax.set_ylabel(\"Agent 1's cooperation probability\")\nax.set_title(\"Full cooperation in past rounds\");\n\n\n\n\n\n\n\n\nThe longer action histories give additional force to mutual cooperation when the agents have cooperated in the past rounds and are close to cooperation. This suggests the hypothesis that longer action histories are beneficial for cooperation to be learned. However, more simulation would be needed to answer this question.\n\n\n\nWhat is the effect of condition actions also on the past actions in the ecological public goods envrionment?\n\necopg1 = HistoryEmbedded(ecopg, h=(1,1,1))\necopg1.Sset\n\n['c,c,g|',\n 'c,c,p|',\n 'c,d,g|',\n 'c,d,p|',\n 'd,c,g|',\n 'd,c,p|',\n 'd,d,g|',\n 'd,d,p|']\n\n\nVisualizing the flow of learning in the prosperous state:\n\nmae1 = stratAC(env=ecopg1, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [1,3,5,7], [0])\ny = ([1], [1,3,5,7], [0])\nax = fp.plot_strategy_flow(mae1, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32,\n                           conds=np.array(mae1.env.Sset)[[1,3,5,7]])\n\n\n\n\n\n\n\n\nThis flow has similarites to the flow of the memory-1 Prisoner’s Dilemma above, yet with more tendency toward cooperation. This is expected, since the ecological public good without memory-1 has also more tendency towards cooperation.",
+    "crumbs": [
+      "Environments",
+      "History Embedding"
+    ]
+  },
+  {
+    "objectID": "Environments/envhistoryembedding.html#examples",
+    "href": "Environments/envhistoryembedding.html#examples",
+    "title": "History Embedding",
+    "section": "",
+    "text": "import numpy as np\nimport matplotlib.pyplot as plt\n\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\nfrom pyCRLD.Environments.EcologicalPublicGood import EcologicalPublicGood\n\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Utils import FlowPlot as fp\n\nnp.random.seed(42)\n\n\nfrom pyCRLD.Environments.HistoryEmbedding import HistoryEmbedded\n\n\nsocdi = SocialDilemma(R=1.0, T=1.2, S=-0.5, P=0.0)\necopg = EcologicalPublicGood(N=2, f=1.2, c=5, m=-5, qc=0.2, qr=0.1)\n\n\n\nWith history embedding, we can wrap the standard normal form social dilemma envrionment into one, where the agents condition their action on the actions of the last rounds\n\nmemo1pd = HistoryEmbedded(socdi, h=(1,1,1))\n\nwhich has effectively a state set with the four elements\n\nmemo1pd.Sset\n\n['c,c,.|', 'c,d,.|', 'd,c,.|', 'd,d,.|']\n\n\nAs you can see in the flow plots, this opens the possiblity for cooperation:\n\nmae1 = stratAC(env=memo1pd, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0,1,2,3], [0])\ny = ([1], [0,1,2,3], [0])\nax = fp.plot_strategy_flow(mae1, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32,\n                           conds=mae1.env.Sset)\n\n\n\n\n\n\n\n\nIn contrast to the case where agents do not react to the actions of the past round. Here, the only strategy the agents learn is defection:\n\nnp.random.seed(42)\nmae0 = stratAC(env=socdi, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nax = fp.plot_strategy_flow(mae0, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32)\n\n\n\n\n\n\n\n\nWhat is the effect of having longer action histories?\n\nhlen = 2\nmemoXpd = HistoryEmbedded(socdi, h=(1, hlen, hlen))\nprint( len(memoXpd.Sset) )\n\n16\n\n\n\nmaeX = stratAC(env=memoXpd, learning_rates=0.1, discount_factors=0.9)\n\nfig, ax = plt.subplots(1,1, figsize=(8,9))\nfaps = np.linspace(0.01 ,0.99, 13)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nfp.plot_strategy_flow(mae1, x, y, flowarrow_points=faps, NrRandom=32, cmap=\"Blues\", axes=[ax])\nfp.plot_strategy_flow(maeX, x, y, flowarrow_points=faps, NrRandom=32, cmap=\"Reds\", axes=[ax]);\nax.set_xlabel(\"Agent 0's cooperation probability\")\nax.set_ylabel(\"Agent 1's cooperation probability\")\nax.set_title(\"Full cooperation in past rounds\");\n\n\n\n\n\n\n\n\nThe longer action histories give additional force to mutual cooperation when the agents have cooperated in the past rounds and are close to cooperation. This suggests the hypothesis that longer action histories are beneficial for cooperation to be learned. However, more simulation would be needed to answer this question.\n\n\n\nWhat is the effect of condition actions also on the past actions in the ecological public goods envrionment?\n\necopg1 = HistoryEmbedded(ecopg, h=(1,1,1))\necopg1.Sset\n\n['c,c,g|',\n 'c,c,p|',\n 'c,d,g|',\n 'c,d,p|',\n 'd,c,g|',\n 'd,c,p|',\n 'd,d,g|',\n 'd,d,p|']\n\n\nVisualizing the flow of learning in the prosperous state:\n\nmae1 = stratAC(env=ecopg1, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [1,3,5,7], [0])\ny = ([1], [1,3,5,7], [0])\nax = fp.plot_strategy_flow(mae1, x, y, flowarrow_points=np.linspace(0.01 ,0.99, 9), NrRandom=32,\n                           conds=np.array(mae1.env.Sset)[[1,3,5,7]])\n\n\n\n\n\n\n\n\nThis flow has similarites to the flow of the memory-1 Prisoner’s Dilemma above, yet with more tendency toward cooperation. This is expected, since the ecological public good without memory-1 has also more tendency towards cooperation.",
+    "crumbs": [
+      "Environments",
+      "History Embedding"
+    ]
+  },
+  {
+    "objectID": "Environments/envhistoryembedding.html#implementation",
+    "href": "Environments/envhistoryembedding.html#implementation",
+    "title": "History Embedding",
+    "section": "Implementation",
+    "text": "Implementation\n\nHistories\nA history specification determines which realizations of the past the agents will conditions their actions on.\nA history specification h is an iterable of length 1+N. The first value indicates how many time steps of the state observation the agents will use to conditions their actions on. The remaining values indicate how many actions of each agent are used.\n\nsource\n\n\n_get_all_histories\n\n _get_all_histories (env, h, attr='Z')\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment\n\n\nh\n\n\nA history specification\n\n\nattr\nstr\nZ\n\n\n\n\nThe default history specification is h=(1,0,0). Each agent observes information about the previous state, but none about the other agents.\n\n_get_all_histories(socdi, h=(1,0,0))\n\n\n_get_all_histories(ecopg, h=(1,0,0))\n\nEach element of these lists is one history. The '.' indicates a dummy value for the non-observable actions. As you can see, here, the actions come before the state information - in contrast to the history specification h. You can think of time traveling from left to right in each history. First the agents choose their joint action, than they observe some state information, after which they choose another joint action. And so on, and so forth.\nFor example, the often used memory-one social dilemmas can be obtained by\n\n_get_all_histories(socdi, h=(0,1,1))\n\nHere, the information about the environment is discarded, indicated by the '.'.\nBut the action-history lengths need not be identical,\n\n_get_all_histories(socdi, h=(0,1,2))\n\nHere, each history contains six elements, since it spans two time steps, and each time step is represented by one element for each agent’s action plus one element for the environment.\nOf course, histories can be obtained for any environment.\n\n_get_all_histories(ecopg, h=(2,1,1))\n\nWith _get_all_histories we simply iterate through all state and action indicies. However, we are not checking whether a history is actually possible given the transition probabilities of the envrionment.\n\nsource\n\n\n_hist_contains_NotPossibleTrans\n\n _hist_contains_NotPossibleTrans (env, hist:Iterable)\n\nChecks whether the history contains transitions which are not possible with the environment’s transition probabilities.\n\n\n\n\nType\nDetails\n\n\n\n\nenv\n\nAn environment\n\n\nhist\nIterable\nA history\n\n\nReturns\nbool\nHistory impossible?\n\n\n\nFor example, in the prosperous state 1 of the ecological public good, when both agents choose the cooperative action 0, there is no chance to leave the propserous state and enter the degraded state 0.\n\n_hist_contains_NotPossibleTrans(ecopg, hist=('.', '.', 1, 0, 0, 0))\n\nThus, any history that contains this transition is not needed.\nYet, if only one agent chooses the defective action 0, a transition to the degraded state becomes possible and corresponding histories cannot be discarded.\n\n_hist_contains_NotPossibleTrans(ecopg, hist=('.', '.', 1, 1, 0, 0))\n\n\n_hist_contains_NotPossibleTrans(ecopg, hist=('.', '.', 1, 0, 1, 0))\n\n\nsource\n\n\nStateActHistsIx\n\n StateActHistsIx (env, h)\n\n*Returns all state-action histories (in indices) of env.\nh specifies the type of history. h must be an iterable of length 1+N (where N = Nr. of Agents) The first element of h specifies the length of the state-history Subsequent elements specify the length of the respective action-history*\nFor example, the memory-one social dilemmas is obtained by\n\nStateActHistsIx(socdi, h=(0,1,1))\n\nwhich is identical to\n\n_get_all_histories(socdi, h=(0,1,1))\n\nsince all histories are actually possible in the environment.\nHowever, in our ecological public good example, this is not the case:\n\nlen(StateActHistsIx(ecopg, h=(2,1,1)))\n\n\nlen(_get_all_histories(ecopg, h=(2,1,1)))\n\nDepending on the environment, filtering out impossible histories can lead to a significant performance boost.\n\nsource\n\n\nhSset\n\n hSset (env, h)\n\nString representation of the histories.\n\n\n\n\nDetails\n\n\n\n\nenv\nAn environment\n\n\nh\nA history specificaiton\n\n\n\nFor example,\n\nhSset(socdi, h=(1,1,1))\n\n\nhSset(ecopg, h=(2,1,1))\n\n\n\nTransitions tensor\n\nsource\n\n\nhistSjA_TransitionTensor\n\n histSjA_TransitionTensor (env, h)\n\n*Returns Transition Tensor of env with state-action history specification h.\nh must be an iterable of length 1+N (where N = Nr. of Agents) The first element of h specifies the length of the state-history Subsequent elements specify the length of the respective action-history*\nFor example,\n\nhistSjA_TransitionTensor(socdi, h=(0,1,1)).shape\n\n\nhistSjA_TransitionTensor(ecopg, h=(2,1,1)).shape\n\n\n\nReward tensor\n\nsource\n\n\nhistSjA_RewardTensor\n\n histSjA_RewardTensor (env, h)\n\n*Returns Reward Tensor of env with state-action history specification h.\nh must be an iterable of length 1+N (where N = Nr. of Agents) The first element of h specifies the length of the state-history Subsequent elements specify the length of the respective action-history*\nFor example,\n\nhistSjA_RewardTensor(socdi, h=(1,1,1)).shape\n\n\nhistSjA_RewardTensor(ecopg, h=(1,1,1)).shape\n\n\n\nPartial observation and environmental uncertainty\nNote: These elements are useful for enviroments with state uncertainty or likewise, partial observability. Such are not yet available in this respository.\n\nsource\n\n\nObsActHistsIx\n\n ObsActHistsIx (env, h)\n\n*Returns all obs-action histories of env.\nh specifies the type of history. h must be an iterable of length 1+N (where N = Nr. of Agents) The first element of h specifies the length of the obs-history Subsequent elements specify the length of the respective action-history\nNote: Here only partial observability regarding the envrionmental state applies. Additional partial observability regarding action is treated seperatly.*\n\nObsActHistsIx(socdi, h=(1,1,1))\n\n\nsource\n\n\nhOset\n\n hOset (env, h)\n\n\nhOset(socdi, h=(1,1,1))\n\n\nsource\n\n\nhistSjA_ObservationTensor\n\n histSjA_ObservationTensor (env, h)\n\nReturns Observation Tensor of env with state-action history h[iterable]\n\nhistSjA_ObservationTensor(socdi, h=(1,1,1))\n\n\n\nEnvironment wrapper\n\nsource\n\n\nHistoryEmbedded\n\n HistoryEmbedded (env, h)\n\n*Abstract Environment wrapper to embed a given environment into a larger history space\nh must be an iterable of length 1+N (where N=Nr. of Agents) The first element of history specifies the length of the state-history. Subsequent elements specify the length of the respective action-history*\n\n\n\n\nDetails\n\n\n\n\nenv\nAn environment\n\n\nh\nHistory specification",
+    "crumbs": [
+      "Environments",
+      "History Embedding"
+    ]
+  },
+  {
+    "objectID": "Environments/envsocialdilemma.html",
+    "href": "Environments/envsocialdilemma.html",
+    "title": "Social Dilemma",
+    "section": "",
+    "text": "Typical examples are the Prisoner’s Dilemma, Stag Hunt game, and the game of chicken/snowdrift/hawk-dove.\n\nsource\n\nSocialDilemma\n\n SocialDilemma (R:float, T:float, S:float, P:float)\n\nSymmetric 2-agent 2-action Social Dilemma Matrix Game.\n\n\n\n\nType\nDetails\n\n\n\n\nR\nfloat\nreward of mutual cooperation\n\n\nT\nfloat\ntemptation of unilateral defection\n\n\nS\nfloat\nsucker’s payoff of unilateral cooperation\n\n\nP\nfloat\npunsihment of mutual defection\n\n\n\n\nsource\n\n\nSocialDilemma.TransitionTensor\n\n SocialDilemma.TransitionTensor ()\n\nGet the Transition Tensor.\n\nsource\n\n\nSocialDilemma.RewardTensor\n\n SocialDilemma.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\n\nsource\n\n\nSocialDilemma.actions\n\n SocialDilemma.actions ()\n\nThe action sets\n\nsource\n\n\nSocialDilemma.states\n\n SocialDilemma.states ()\n\nThe states set\n\nsource\n\n\nSocialDilemma.id\n\n SocialDilemma.id ()\n\nReturns id string of environment\n\n\nExample\n\nenv = SocialDilemma(R=1, T=2, S=-1, P=0)\n\n\nenv.id()\n\n'SocialDilemma_2_1_0_-1'\n\n\n\nenv\n\nSocialDilemma_2_1_0_-1\n\n\nReward matrix of agent 0:\n\nenv.RewardTensor()[0,0,:,:,0]\n\narray([[ 1., -1.],\n       [ 2.,  0.]])\n\n\nReward matrix of agent 1:\n\nenv.RewardTensor()[1,0,:,:,0]\n\narray([[ 1.,  2.],\n       [-1.,  0.]])\n\n\n\nenv.TransitionTensor()\n\narray([[[[1.],\n         [1.]],\n\n        [[1.],\n         [1.]]]])\n\n\n\nenv.actions()\n\n[['c', 'd'], ['c', 'd']]\n\n\n\nenv.states()\n\n['.']",
+    "crumbs": [
+      "Environments",
+      "Social Dilemma"
+    ]
+  },
+  {
+    "objectID": "Environments/envbase.html",
+    "href": "Environments/envbase.html",
+    "title": "Environment Base",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Environments",
+      "Environment Base"
+    ]
+  },
+  {
+    "objectID": "Environments/envbase.html#core-methods",
+    "href": "Environments/envbase.html#core-methods",
+    "title": "Environment Base",
+    "section": "Core methods",
+    "text": "Core methods\nThese need to be implemented by a concrete environment.\nThe transitions tensor Tsjas' gives the probability of the environment to transition to state s', given that it was in state s and the agent chose the joint action ja.\n\nsource\n\nebase.TransitionTensor\n\n ebase.TransitionTensor ()\n\n\nclass slf: pass\ntest_fail(ebase.TransitionTensor, args=slf)\n\nraises NotImplementedError.\nThe reward tensor Risjas' gives the reward agent i receives when the environment is in state s, all agents choose the join action ja, and the environment transitions to state s'.\n\nsource\n\n\nebase.RewardTensor\n\n ebase.RewardTensor ()\n\n\nclass slf: pass\ntest_fail(ebase.RewardTensor, args=slf)\n\nraises NotImplementedError.\nThe following two “core” methods are optional. If the concrete environment class does not implement them, they default to the following:\nThe observation tensor Oiso gives the probability that agent i observes observation o when the environment is in state s. The default observation tensor assumes perfect observation and sets the number of observations Q to the number of states Z.\n\nsource\n\n\nebase.ObservationTensor\n\n ebase.ObservationTensor ()\n\nDefault observation tensor: perfect observation\n\nclass slf: Z = 2; N = 3  # dummy self for demonstration only\nebase.ObservationTensor(slf)\n\narray([[[1., 0.],\n        [0., 1.]],\n\n       [[1., 0.],\n        [0., 1.]],\n\n       [[1., 0.],\n        [0., 1.]]])\n\n\nFinal states Fs indicate which states of the environment cause the end of an episode. Their meaning and use within CRLD are not fully resolved yet. If an environment does not implement FinalStates they default to no final states.\n\nsource\n\n\nebase.FinalStates\n\n ebase.FinalStates ()\n\nDefault final states: no final states\n\nclass slf: Z = 7 # dummy self for demonstration only\nebase.FinalStates(slf)\n\narray([0, 0, 0, 0, 0, 0, 0])",
+    "crumbs": [
+      "Environments",
+      "Environment Base"
+    ]
+  },
+  {
+    "objectID": "Environments/envbase.html#default-string-representations",
+    "href": "Environments/envbase.html#default-string-representations",
+    "title": "Environment Base",
+    "section": "Default string representations",
+    "text": "Default string representations\nString representations of actions, states and observations help with interpreting the results of simulation runs. Ideally, an environment class will implement these methods with descriptive values.\nTo show these methods here we create a dummy “self” of 2 environmental states, containing 3 agents with 4 actions and 5 observations of the environmental states.\n\n# dummy self of 2 environmental 2 agents with 3 actions in an environment\nclass slf: Z = 2; N = 3; M=4; Q=5\n\n\nsource\n\nebase.actions\n\n ebase.actions ()\n\nDefault action set representations act_im.\n\nebase.actions(slf)\n\n[['0', '1', '2', '3'], ['0', '1', '2', '3'], ['0', '1', '2', '3']]\n\n\n\nsource\n\n\nebase.states\n\n ebase.states ()\n\nDefault state set representation state_s.\n\nebase.states(slf)\n\n['0', '1']\n\n\n\nsource\n\n\nebase.observations\n\n ebase.observations ()\n\nDefault observation set representations obs_io.\n\nebase.observations(slf)\n\n[['0', '1', '2', '3', '4'],\n ['0', '1', '2', '3', '4'],\n ['0', '1', '2', '3', '4']]\n\n\n\nsource\n\n\nebase.__repr__\n\n ebase.__repr__ ()\n\nReturn repr(self).\n\nsource\n\n\nebase.__str__\n\n ebase.__str__ ()\n\nReturn str(self).\n\nsource\n\n\nebase.id\n\n ebase.id ()\n\nReturns id string of environment",
+    "crumbs": [
+      "Environments",
+      "Environment Base"
+    ]
+  },
+  {
+    "objectID": "Environments/envbase.html#interactive-use",
+    "href": "Environments/envbase.html#interactive-use",
+    "title": "Environment Base",
+    "section": "Interactive use",
+    "text": "Interactive use\nEnvironments can also be used interactivly, e.g., with iterative learning algorithms. For this purpose we provide the OpenAI Gym [step](https://wbarfuss.github.io/pyCRLD/Agents/avaluebase.html#step) Interface.\n\nsource\n\nebase.step\n\n ebase.step (jA:Iterable)\n\nIterate the environment one step forward.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\njA\nIterable\njoint actions\n\n\nReturns\ntuple\n(observations_i, rewards_i, done, info)\n\n\n\n\nsource\n\n\nebase.observation\n\n ebase.observation ()\n\nPossibly random observation for each agent from the current state.",
+    "crumbs": [
+      "Environments",
+      "Environment Base"
+    ]
+  },
+  {
+    "objectID": "Utils/uhelpers.html",
+    "href": "Utils/uhelpers.html",
+    "title": "Helpers",
+    "section": "",
+    "text": "source\n\nmake_variable_vector\n\n make_variable_vector (variable, length:int)\n\nTurn a variable into a vector or check that length is consistent.\n\n\n\n\nType\nDetails\n\n\n\n\nvariable\n\ncan be iterable or float or int\n\n\nlength\nint\nlength of the vector\n\n\n\nFor example, when providing a discount factor of 0.9 to all 5 agents, we can simply write\n\nmake_variable_vector(0.9, 5)\n\nArray([0.9, 0.9, 0.9, 0.9, 0.9], dtype=float32, weak_type=True)\n\n\n\nsource\n\n\ncompute_stationarydistribution\n\n compute_stationarydistribution (Tkk:jax.Array)\n\nCompute stationary distribution for transition matrix Tkk.\n\n\n\n\nType\nDetails\n\n\n\n\nTkk\nArray\nTransition matrix\n\n\n\nFor example, let’s create a random transition matrix with dimension 4:\n\nTkk = np.random.rand(4,4)\n\nA transition matrix contains probabilities, which need to sum up to 1.\n\nTkk = Tkk / Tkk.sum(-1, keepdims=True)\n\ncompute_stationarydistribution should return a 4 by 4 matrix with the stationary distribution in the first column, and the rest filled with a dummy value of -10. This was done to make it work with jax just-in-time-compilation.\n\ncompute_stationarydistribution(Tkk).round(1)\n\nArray([[  0.2, -10. , -10. , -10. ],\n       [  0.3, -10. , -10. , -10. ],\n       [  0.2, -10. , -10. , -10. ],\n       [  0.3, -10. , -10. , -10. ]], dtype=float32)",
+    "crumbs": [
+      "Utils",
+      "Helpers"
+    ]
+  },
+  {
+    "objectID": "Agents/apobase.html",
+    "href": "Agents/apobase.html",
+    "title": "Base (part. Obs.)",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Agents",
+      "Base (part. Obs.)"
+    ]
+  },
+  {
+    "objectID": "Agents/apobase.html#strategy-averaging",
+    "href": "Agents/apobase.html#strategy-averaging",
+    "title": "Base (part. Obs.)",
+    "section": "Strategy Averaging",
+    "text": "Strategy Averaging\nCore methods to compute the strategy-average reward-prediction error\n\nsource\n\naPObase.Xisa\n\n aPObase.Xisa (X)\n\nCompute state-action policy given the current observation-action policy\n\nsource\n\n\naPObase.Tss\n\n aPObase.Tss (X)\n\nCompute average transition model Tss given policy X\n\nsource\n\n\naPObase.Bios\n\n aPObase.Bios (X)\n\nCompute ‘belief’ that environment is in stats s given agent i observes observation o (Bayes Rule)\n\nsource\n\n\naPObase.Tioo\n\n aPObase.Tioo (X, Bios=None, Xisa=None)\n\nCompute average transition model Tioo, given joint policy X\n\nsource\n\n\naPObase.Tioao\n\n aPObase.Tioao (X, Bios=None, Xisa=None)\n\nCompute average transition model Tioao, given joint policy X\n\nsource\n\n\naPObase.Rioa\n\n aPObase.Rioa (X, Bios=None, Xisa=None)\n\nCompute average reward Riosa, given joint policy X\n\nsource\n\n\naPObase.Rio\n\n aPObase.Rio (X, Bios=None, Xisa=None, Rioa=None)\n\nCompute average reward Rio, given joint policy X\n\nsource\n\n\naPObase.Vio\n\n aPObase.Vio (X, Rio=None, Tioo=None, Bios=None, Xisa=None, Rioa=None,\n              gamma=None)\n\nCompute average observation values Vio, given joint policy X\n\nsource\n\n\naPObase.Qioa\n\n aPObase.Qioa (X, Rioa=None, Vio=None, Tioao=None, Bios=None, Xisa=None,\n               gamma=None)\n\n\nsource\n\n\naPObase.Ri\n\n aPObase.Ri (X)\n\nCompute average reward Ri, given joint policy X\n\n#show_doc(aPObase.obsdist)\n\n\nsource\n\n\naPObase.Tisas\n\n aPObase.Tisas (X)\n\nCompute average transition model Tisas, given joint policy X\n\nsource\n\n\naPObase.Risa\n\n aPObase.Risa (X)\n\nCompute average reward Risa, given joint policy X\n\nsource\n\n\naPObase.Ris\n\n aPObase.Ris (X, Risa=None)\n\nCompute average reward Ris, given joint policy X\n\nsource\n\n\naPObase.Vis\n\n aPObase.Vis (X, Ris=None, Tss=None, Risa=None)\n\nCompute average state values Vis, given joint policy X\n\nsource\n\n\naPObase.Qisa\n\n aPObase.Qisa (X, Risa=None, Vis=None, Tisas=None)\n\nCompute average state-action values Qisa, given joint policy X",
+    "crumbs": [
+      "Agents",
+      "Base (part. Obs.)"
+    ]
+  },
+  {
+    "objectID": "Agents/astrategyactorcritic.html",
+    "href": "Agents/astrategyactorcritic.html",
+    "title": "Strategy Actor-Critic",
+    "section": "",
+    "text": "source\n\nstratAC\n\n stratAC (env, learning_rates:Union[float,Iterable],\n          discount_factors:Union[float,Iterable],\n          choice_intensities:Union[float,Iterable]=1.0,\n          use_prefactor=False, opteinsum=True, **kwargs)\n\nClass for CRLD-actor-critic agents in strategy space.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment object\n\n\nlearning_rates\nUnion\n\nagents’ learning rates\n\n\ndiscount_factors\nUnion\n\nagents’ discount factors\n\n\nchoice_intensities\nUnion\n1.0\nagents’ choice intensities\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\nkwargs\n\n\n\n\n\n\nNote, choice_intensities are not required for actor-critic learning and have no other effect than scaling the learning_rates. Hence the default value of 1.\n\nsource\n\n\nstratAC.RPEisa\n\n stratAC.RPEisa (Xisa, norm=False)\n\nCompute reward-prediction/temporal-difference error for strategy actor-critic dynamics, given joint strategy Xisa.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\n\n\nJoint strategy\n\n\nnorm\nbool\nFalse\nnormalize error around actions?\n\n\nReturns\nndarray\n\nRP/TD error\n\n\n\n\nsource\n\n\nstratAC.NextVisa\n\n stratAC.NextVisa (Xisa, Vis=None, Tss=None, Ris=None, Risa=None)\n\nCompute strategy-average next value for agent i, current state s and action a.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\n\n\nJoint strategy\n\n\nVis\nNoneType\nNone\nOptional values for speed-up\n\n\nTss\nNoneType\nNone\nOptional transition for speed-up\n\n\nRis\nNoneType\nNone\nOptional reward for speed-up\n\n\nRisa\nNoneType\nNone\nOptional reward for speed-up\n\n\nReturns\nArray\n\nNext values",
+    "crumbs": [
+      "Agents",
+      "Strategy Actor-Critic"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluesarsa.html",
+    "href": "Agents/avaluesarsa.html",
+    "title": "Value SARSA",
+    "section": "",
+    "text": "The value-based SARSA dynamics have been developed and used in the paper, Intrinsic fluctuations of reinforcement learning promote cooperation by Barfuss W, Meylahn J in Sci Rep 13, 1309 (2023).",
+    "crumbs": [
+      "Agents",
+      "Value SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluesarsa.html#example",
+    "href": "Agents/avaluesarsa.html#example",
+    "title": "Value SARSA",
+    "section": "Example",
+    "text": "Example\nFirst, we import the necessary libraries.\n\nfrom pyCRLD.Agents.ValueSARSA import valSARSA\nfrom pyCRLD.Agents.ValueBase import multiagent_epsilongreedy_strategy\n\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\n\nimport numpy as np\nimport matplotlib.pyplot as plt\n\nNext, we define an epsilon-greedy strategy function. This strategy function selects the best action with probability 1-epsilon and a random action with probability epsilon.\n\nepsgreedy = multiagent_epsilongreedy_strategy(epsilon_greedys=[0.01, 0.01])\n\nWe define the environment to be a simple stag-hunt game.\n\nenv = SocialDilemma(R=1.0, T=0.75, S=-0.15, P=0.0)\n\nWe use both, the strategy function and the envrionment to create the value-based SARSA multi-agent environment objecte mae\n\nmae = valSARSA(env, discount_factors=0.5, learning_rates=0.1, strategy_function=epsgreedy)\n\nWe illustrate the value-based SARSA agents by sampling from 50 random initial values and plot the resulting learning times series in value space.\n\nfor _ in range(50):\n        Qinit = mae.random_values()\n        Qtisa, fpr = mae.trajectory(Qinit, Tmax=1000, tolerance=10e-9)\n\n        # plot time series\n        plt.plot(Qtisa[:, 0, 0, 0]- Qtisa[:, 0, 0, 1], \n                Qtisa[:, 1, 0, 0]- Qtisa[:, 1, 0, 1],\n                '.-', alpha=0.1, color='blue')\n        # plot last point\n        plt.plot(Qtisa[-1, 0, 0, 0]- Qtisa[-1, 0, 0, 1],\n                Qtisa[-1, 1, 0, 0]- Qtisa[-1, 1, 0, 1],\n                '.', color='red')\n\n# plot quadrants\nplt.plot([0, 0], [-2, 2], '-', color='gray', lw=0.5)\nplt.plot([-2, 2], [0, 0], '-', color='gray', lw=0.5)\n\nplt.xlim(-1.2, 1.2); plt.ylim(-1.2, 1.2)\nplt.xlabel(r'action-value difference $Q(coop.) - Q(defect)$ of agent 1'); \nplt.ylabel(r'$Q(coop.) - Q(defect)$ of agent 2');",
+    "crumbs": [
+      "Agents",
+      "Value SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluesarsa.html#implementation",
+    "href": "Agents/avaluesarsa.html#implementation",
+    "title": "Value SARSA",
+    "section": "Implementation",
+    "text": "Implementation\n\nsource\n\nvalSARSA\n\n valSARSA (env, learning_rates:Union[float,Iterable],\n           discount_factors:Union[float,Iterable], strategy_function,\n           choice_intensities:Union[float,Iterable]=1.0,\n           use_prefactor=False, opteinsum=True, **kwargs)\n\nClass for CRLD-SARSA agents in value space.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment object\n\n\nlearning_rates\nUnion\n\nagents’ learning rates\n\n\ndiscount_factors\nUnion\n\nagents’ discount factors\n\n\nstrategy_function\n\n\nthe strategy function object\n\n\nchoice_intensities\nUnion\n1.0\nagents’ choice intensities\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\nkwargs\n\n\n\n\n\n\nThe temporal difference reward-prediction error is calculated as follows:\n\nsource\n\n\nRPEisa\n\n RPEisa (Qisa, norm=False)\n\nCompute temporal-difference reward-prediction error for value SARSA dynamics, given joint state-action values Qisa.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nQisa\n\n\nJoint strategy\n\n\nnorm\nbool\nFalse\nnormalize error around actions?\n\n\nReturns\nndarray\n\nreward-prediction error\n\n\n\n\nsource\n\n\nvalRisa\n\n valRisa (Qisa)\n\nAverage reward Risa, given joint state-action values Qisa\n\n\n\n\nDetails\n\n\n\n\nQisa\nJoint state-action values\n\n\n\n\nsource\n\n\nvalNextQisa\n\n valNextQisa (Qisa)\n\nCompute strategy-average next state-action value for agent i, current state s and action a, given joint state-action values Qisa.",
+    "crumbs": [
+      "Agents",
+      "Value SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/abase.html",
+    "href": "Agents/abase.html",
+    "title": "Base",
+    "section": "",
+    "text": "contains core methods to compute the strategy-average reward-prediction error.\n\nsource\n\n\n\n abase (TransitionTensor:numpy.ndarray, RewardTensor:numpy.ndarray,\n        DiscountFactors:Iterable[float], use_prefactor=False,\n        opteinsum=True)\n\nBase class for deterministic strategy-average independent (multi-agent) temporal-difference reinforcement learning.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nTransitionTensor\nndarray\n\ntransition model of the environment\n\n\nRewardTensor\nndarray\n\nreward model of the environment\n\n\nDiscountFactors\nIterable\n\nthe agents’ discount factors\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions",
+    "crumbs": [
+      "Agents",
+      "Base"
+    ]
+  },
+  {
+    "objectID": "Agents/abase.html#the-agent-base-class",
+    "href": "Agents/abase.html#the-agent-base-class",
+    "title": "Base",
+    "section": "",
+    "text": "contains core methods to compute the strategy-average reward-prediction error.\n\nsource\n\n\n\n abase (TransitionTensor:numpy.ndarray, RewardTensor:numpy.ndarray,\n        DiscountFactors:Iterable[float], use_prefactor=False,\n        opteinsum=True)\n\nBase class for deterministic strategy-average independent (multi-agent) temporal-difference reinforcement learning.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nTransitionTensor\nndarray\n\ntransition model of the environment\n\n\nRewardTensor\nndarray\n\nreward model of the environment\n\n\nDiscountFactors\nIterable\n\nthe agents’ discount factors\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions",
+    "crumbs": [
+      "Agents",
+      "Base"
+    ]
+  },
+  {
+    "objectID": "Agents/abase.html#strategy-averaging",
+    "href": "Agents/abase.html#strategy-averaging",
+    "title": "Base",
+    "section": "Strategy averaging",
+    "text": "Strategy averaging\nCore methods to compute the strategy-average reward-prediction error\n\nsource\n\nabase.Tss\n\n abase.Tss (Xisa:jax.Array)\n\nCompute average transition model Tss, given joint strategy Xisa\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\nArray\nJoint strategy\n\n\nReturns\nArray\nAverage transition matrix\n\n\n\n\nsource\n\n\nabase.Tisas\n\n abase.Tisas (Xisa:jax.Array)\n\nCompute average transition model Tisas, given joint strategy Xisa\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\nArray\nJoint strategy\n\n\nReturns\nArray\nAverage transition Tisas\n\n\n\n\nsource\n\n\nabase.Ris\n\n abase.Ris (Xisa:jax.Array, Risa:jax.Array=None)\n\nCompute average reward Ris, given joint strategy Xisa\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\nArray\n\nJoint strategy\n\n\nRisa\nArray\nNone\nOptional reward for speed-up\n\n\nReturns\nArray\n\nAverage reward\n\n\n\n\nsource\n\n\nabase.Risa\n\n abase.Risa (Xisa:jax.Array)\n\nCompute average reward Risa, given joint strategy Xisa\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\nArray\nJoint strategy\n\n\nReturns\nArray\nAverage reward\n\n\n\n\nsource\n\n\nabase.Vis\n\n abase.Vis (Xisa:jax.Array, Ris:jax.Array=None, Tss:jax.Array=None,\n            Risa:jax.Array=None)\n\nCompute average state values Vis, given joint strategy Xisa\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\nArray\n\nJoint strategy\n\n\nRis\nArray\nNone\nOptional reward for speed-up\n\n\nTss\nArray\nNone\nOptional transition for speed-up\n\n\nRisa\nArray\nNone\nOptional reward for speed-up\n\n\nReturns\nArray\n\nAverage state values\n\n\n\n\nsource\n\n\nabase.Qisa\n\n abase.Qisa (Xisa:jax.Array, Risa:jax.Array=None, Vis:jax.Array=None,\n             Tisas:jax.Array=None)\n\nCompute average state-action values Qisa, given joint strategy Xisa\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\nArray\n\nJoint strategy\n\n\nRisa\nArray\nNone\nOptional reward for speed-up\n\n\nVis\nArray\nNone\nOptional values for speed-up\n\n\nTisas\nArray\nNone\nOptional transition for speed-up\n\n\nReturns\nArray\n\nAverage state-action values",
+    "crumbs": [
+      "Agents",
+      "Base"
+    ]
+  },
+  {
+    "objectID": "Agents/abase.html#helpers",
+    "href": "Agents/abase.html#helpers",
+    "title": "Base",
+    "section": "Helpers",
+    "text": "Helpers\n\nsource\n\nabase.Ps\n\n abase.Ps (Xisa:jax.Array)\n\nCompute stationary state distribution Ps, given joint strategy Xisa.\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\nArray\nJoint strategy\n\n\nReturns\nArray\nStationary state distribution\n\n\n\nPs uses the compute_stationarydistribution function.\n\nfrom pyCRLD.Environments.EcologicalPublicGood import EcologicalPublicGood as EPG\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\n\n\nenv = EPG(N=2, f=1.2, c=5, m=-5, qc=0.2, qr=0.01, degraded_choice=False)\nMAEi = stratAC(env=env, learning_rates=0.1, discount_factors=0.99, use_prefactor=True)\n\nx = MAEi.random_softmax_strategy()\nMAEi._numpyPs(x)\n\narray([0.91309416, 0.08690587], dtype=float32)\n\n\n\nMAEi.Ps(x)\n\nArray([0.91309416, 0.08690587], dtype=float32)\n\n\n\nsource\n\n\nabase.Ri\n\n abase.Ri (Xisa:jax.Array)\n\nCompute average reward Ri, given joint strategy Xisa.\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\nArray\nJoint strategy Xisa\n\n\nReturns\nArray\nAverage reward Ri\n\n\n\n\nMAEi.Ri(x)\n\nArray([-4.6322937, -4.5121984], dtype=float32)\n\n\n\nsource\n\n\nabase.trajectory\n\n abase.trajectory (Xinit:jax.Array, Tmax:int=100, tolerance:float=None,\n                   verbose=False, **kwargs)\n\nCompute a joint learning trajectory.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXinit\nArray\n\nInitial condition\n\n\nTmax\nint\n100\nthe maximum number of iteration steps\n\n\ntolerance\nfloat\nNone\nto determine if a fix point is reached\n\n\nverbose\nbool\nFalse\nSay something during computation?\n\n\nkwargs\n\n\n\n\n\nReturns\ntuple\n\n(trajectory, fixpointreached)\n\n\n\ntrajectory is an Array containing the time-evolution of the dynamic variable. fixpointreached is a bool saying whether or not a fixed point has been reached.\n\nsource\n\n\nabase._OtherAgentsActionsSummationTensor\n\n abase._OtherAgentsActionsSummationTensor ()\n\nTo sum over the other agents and their respective actions using einsum.\nTo obtain the strategy-average reward-prediction error for agent \\(i\\), we need to average out the probabilities contained in the strategies of all other agents \\(j \\neq i\\) and the transition function \\(T\\),\n\\[\n\\sum_{a^j} \\sum_{s'} \\prod_{i\\neq j} X^j(s, a^j) T(s, \\mathbf a, s').\n\\]\nThe _OtherAgentsActionsSummationTensor enables this summation to be exectued in the efficient einsum function. It contains only \\(0\\)s and \\(1\\)s and is of dimension\n\\[\nN \\times \\underbrace{N \\times ... \\times N}_{(N-1) \\text{ times}}\n\\times M \\times \\underbrace{M \\times ... \\times M}_{N \\text{ times}}\n\\times \\underbrace{M \\times ... \\times M}_{(N-1) \\text{ times}}\n\\]\nwhich represent\n\\[\n\\overbrace{N}^{\\text{the focal agent}}\n\\times\n\\overbrace{\\underbrace{N \\times ... \\times N}_{(N-1) \\text{ times}}}^\\text{all other agents}\n\\times\n\\overbrace{M}^\\text{focal agent's action}\n\\times\n\\overbrace{\\underbrace{M \\times ... \\times M}_{N \\text{ times}}}^\\text{all actions}\n\\times\n\\overbrace{\\underbrace{M \\times ... \\times M}_{(N-1) \\text{ times}}}^\\text{all other agents' actions}\n\\]\nIt contains a \\(1\\) only if\n\nall agent indices (comprised of the focal agent index and all other agents indices) are different from each other\nand the focal agent’s action index matches the focal agents’ action index in all actions\nand if all other agents’ action indices match their corresponding action indices in all actions.\n\nOtherwise it contains a \\(0\\).",
+    "crumbs": [
+      "Agents",
+      "Base"
+    ]
+  },
+  {
+    "objectID": "Agents/apostrategyactorcritic.html",
+    "href": "Agents/apostrategyactorcritic.html",
+    "title": "Strategy AC (part. Obs.)",
+    "section": "",
+    "text": "source\n\nPOstratAC\n\n POstratAC (env, learning_rates, discount_factors, choice_intensities=1,\n            **kwargs)\n\nClass for deterministic policy-average independent (multi-agent) partially observable temporal-difference actor-critic reinforcement learning in policy space.\n\nsource\n\n\nPOstratAC.RPEioa\n\n POstratAC.RPEioa (X, norm=False)\n\nTD error for partially observable policy AC dynamics, given joint policy X\n\nsource\n\n\nPOstratAC.NextVioa\n\n POstratAC.NextVioa (X, Xisa=None, Bios=None, Vio=None, Tioo=None,\n                     Rio=None, Rioa=None)\n\nPolicy-average next value for agent i, current obs o and act a.",
+    "crumbs": [
+      "Agents",
+      "Strategy AC (part. Obs.)"
+    ]
+  },
+  {
+    "objectID": "Agents/apostrategybase.html",
+    "href": "Agents/apostrategybase.html",
+    "title": "Strategy Base (part. Obs.)",
+    "section": "",
+    "text": "source\n\nPOstrategybase\n\n POstrategybase (env, learning_rates, discount_factors,\n                 choice_intensities=1, **kwargs)\n\nBase Class for deterministic policy-average independent (multi-agent) partially observable temporal-difference reinforcement learning in policy space.\n\nsource\n\n\nPOstrategybase.random_softmax_policy\n\n POstrategybase.random_softmax_policy ()\n\nSoftmax policy with random probabilities.\n\nsource\n\n\nPOstrategybase.zero_intelligence_policy\n\n POstrategybase.zero_intelligence_policy ()\n\nPolicy with equal probabilities.",
+    "crumbs": [
+      "Agents",
+      "Strategy Base (part. Obs.)"
+    ]
+  },
+  {
+    "objectID": "Agents/astrategysarsa.html",
+    "href": "Agents/astrategysarsa.html",
+    "title": "Strategy SARSA",
+    "section": "",
+    "text": "SARSA agents take into acount the five pieces of information of current State, current Action, Reward, next State and next Action.",
+    "crumbs": [
+      "Agents",
+      "Strategy SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/astrategysarsa.html#example",
+    "href": "Agents/astrategysarsa.html#example",
+    "title": "Strategy SARSA",
+    "section": "Example",
+    "text": "Example\n\nfrom pyCRLD.Agents.StrategySARSA import stratSARSA\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\n\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\nfrom pyCRLD.Utils import FlowPlot as fp\n\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\n\nLet’s compare the SARSA (in red) with the actor-critic learners (in blue). The difference is that the SARSA learners incorporate an explicit exploration term in their learning update, regulated by the choice_intensities. For low choice intensities, the SARSA learners tend to extreme exploration, i.e., toward the center of the strategy space. For high choice intensities, the SARSA map onto the actor-critic learners (see Figure below). For the actor-critic learners, the choice_intensities have no effect other than scaling the learning speed alongside the learning rates.\n\nfig, ax = plt.subplots(1,4, figsize=(18,4))\nfaps = np.linspace(0.01 ,0.99, 9)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\n\nfor i, ci in enumerate([0.1, 1.0, 10, 100]):\n\n    maeiAC = stratAC(env=env, learning_rates=0.1, discount_factors=0.9, choice_intensities=ci)\n    maeiSARSA = stratSARSA(env=env, learning_rates=0.1, discount_factors=0.9, choice_intensities=ci)\n\n    fp.plot_strategy_flow(maeiAC, x, y, flowarrow_points=faps, cmap=\"Blues\", axes=[ax[i]])\n    fp.plot_strategy_flow(maeiSARSA, x, y, flowarrow_points=faps, cmap=\"Reds\", axes=[ax[i]]);\n\n    ax[i].set_xlabel(\"Agent 0's cooperation probability\")\n    ax[i].set_ylabel(\"Agent 1's cooperation probability\")\n    ax[i].set_title(\"Intensity of choice {}\".format(ci));",
+    "crumbs": [
+      "Agents",
+      "Strategy SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/astrategysarsa.html#api",
+    "href": "Agents/astrategysarsa.html#api",
+    "title": "Strategy SARSA",
+    "section": "API",
+    "text": "API\n\nsource\n\nstratSARSA\n\n stratSARSA (env, learning_rates:Union[float,Iterable],\n             discount_factors:Union[float,Iterable],\n             choice_intensities:Union[float,Iterable]=1.0,\n             use_prefactor=False, opteinsum=True, **kwargs)\n\nClass for CRLD-SARSA agents in strategy space.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment object\n\n\nlearning_rates\nUnion\n\nagents’ learning rates\n\n\ndiscount_factors\nUnion\n\nagents’ discount factors\n\n\nchoice_intensities\nUnion\n1.0\nagents’ choice intensities\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\nkwargs\n\n\n\n\n\n\n\nsource\n\n\nstratSARSA.RPEisa\n\n stratSARSA.RPEisa (Xisa, norm=False)\n\nCompute reward-prediction/temporal-difference error for strategy SARSA dynamics, given joint strategy Xisa.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\n\n\nJoint strategy\n\n\nnorm\nbool\nFalse\nnormalize error around actions?\n\n\nReturns\nndarray\n\nRP/TD error\n\n\n\n\nsource\n\n\nstratSARSA.NextQisa\n\n stratSARSA.NextQisa (Xisa, Qisa=None, Risa=None, Vis=None, Tisas=None)\n\nCompute strategy-average next state-action value for agent i, current state s and action a.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXisa\n\n\nJoint strategy\n\n\nQisa\nNoneType\nNone\nOptional state-action values for speed-up\n\n\nRisa\nNoneType\nNone\nOptional rewards for speed-up\n\n\nVis\nNoneType\nNone\nOptional state values for speed-up\n\n\nTisas\nNoneType\nNone\nOptional transition for speed-up\n\n\nReturns\nArray\n\nNext values\n\n\n\nNote, that although stratSARSA.NextQisa is computed differently than stratAC.NextVisa, they give actually identical values.\n\nci = 100 * np.random.rand()\n\nmaeAC = stratAC(env=env, learning_rates=0.1, discount_factors=0.9, choice_intensities=ci)\nmaeSARSA = stratSARSA(env=env, learning_rates=0.1, discount_factors=0.9, choice_intensities=ci)\n\nX = maeAC.random_softmax_strategy()\n\nassert np.allclose(maeAC.NextVisa(X) - maeSARSA.NextQisa(X), 0, atol=1e-05)",
+    "crumbs": [
+      "Agents",
+      "Strategy SARSA"
+    ]
+  },
+  {
+    "objectID": "Agents/astrategybase.html",
+    "href": "Agents/astrategybase.html",
+    "title": "Strategy Base",
+    "section": "",
+    "text": "source\n\nstrategybase\n\n strategybase (env, learning_rates:Union[float,Iterable],\n               discount_factors:Union[float,Iterable],\n               choice_intensities:Union[float,Iterable]=1.0,\n               use_prefactor=False, opteinsum=True, **kwargs)\n\nBase class for deterministic strategy-average independent (multi-agent) temporal-difference reinforcement learning in strategy space.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment object\n\n\nlearning_rates\nUnion\n\nagents’ learning rates\n\n\ndiscount_factors\nUnion\n\nagents’ discount factors\n\n\nchoice_intensities\nUnion\n1.0\nagents’ choice intensities\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\nkwargs\n\n\n\n\n\n\nFurther optional paramerater inherting from abase:\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\n\n\nsource\n\n\nstrategybase.step\n\n strategybase.step (Xisa)\n\nPerforms a learning step along the reward-prediction/temporal-difference error in strategy space, given joint strategy Xisa.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\n\nJoint strategy\n\n\nReturns\ntuple\n(Updated joint strategy, Prediction error)\n\n\n\n\nsource\n\n\nstrategybase.reverse_step\n\n strategybase.reverse_step (Xisa)\n\n*Performs a reverse learning step in strategy space, given joint strategy Xisa.\nThis is useful to compute the separatrix of a multistable regime.*\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nXisa\n\nJoint strategy\n\n\nReturns\ntuple\n(Updated joint strategy, Prediction error)\n\n\n\n\nsource\n\n\nstrategybase.zero_intelligence_strategy\n\n strategybase.zero_intelligence_strategy ()\n\nReturns strategy Xisa with equal action probabilities.\n\nsource\n\n\nstrategybase.random_softmax_strategy\n\n strategybase.random_softmax_strategy ()\n\nReturns softmax strategy Xisa with random action probabilities.\n\nsource\n\n\nstrategybase.id\n\n strategybase.id ()\n\nReturns an identifier to handle simulation runs.",
+    "crumbs": [
+      "Agents",
+      "Strategy Base"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluebase.html",
+    "href": "Agents/avaluebase.html",
+    "title": "Value Base",
+    "section": "",
+    "text": "First, we define classes for different stragegy functions which are necessary for value-based agents. Then, we define the base class for value-based agents.\n\nsource\n\n\n\n multiagent_epsilongreedy_strategy (epsilon_greedys=None, N=None)\n\nA multiagent epsilon-greedy strategy in tabular form\n\nsource\n\n\n\n\n action_probabilities (Qisa)\n\nTransform Q values into epsilongreedy policy\n\nsource\n\n\n\n\n multiagent_epsilongreedy_strategy.id ()\n\nReturns an identifier to handle simulation runs.",
+    "crumbs": [
+      "Agents",
+      "Value Base"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluebase.html#strategy-functions",
+    "href": "Agents/avaluebase.html#strategy-functions",
+    "title": "Value Base",
+    "section": "",
+    "text": "First, we define classes for different stragegy functions which are necessary for value-based agents. Then, we define the base class for value-based agents.\n\nsource\n\n\n\n multiagent_epsilongreedy_strategy (epsilon_greedys=None, N=None)\n\nA multiagent epsilon-greedy strategy in tabular form\n\nsource\n\n\n\n\n action_probabilities (Qisa)\n\nTransform Q values into epsilongreedy policy\n\nsource\n\n\n\n\n multiagent_epsilongreedy_strategy.id ()\n\nReturns an identifier to handle simulation runs.",
+    "crumbs": [
+      "Agents",
+      "Value Base"
+    ]
+  },
+  {
+    "objectID": "Agents/avaluebase.html#value-base-class",
+    "href": "Agents/avaluebase.html#value-base-class",
+    "title": "Value Base",
+    "section": "Value Base Class",
+    "text": "Value Base Class\nNow we define the base clase for the value-based CRLD agents.\n\nsource\n\nvaluebase\n\n valuebase (env, learning_rates:Union[float,Iterable],\n            discount_factors:Union[float,Iterable], strategy_function,\n            choice_intensities:Union[float,Iterable]=1.0,\n            use_prefactor=False, opteinsum=True, **kwargs)\n\nBase class for deterministic strategy-average independent (multi-agent) reward-prediction temporal-difference reinforcement learning in value space.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\n\n\nAn environment object\n\n\nlearning_rates\nUnion\n\nagents’ learning rates\n\n\ndiscount_factors\nUnion\n\nagents’ discount factors\n\n\nstrategy_function\n\n\nthe strategy function object\n\n\nchoice_intensities\nUnion\n1.0\nagents’ choice intensities\n\n\nuse_prefactor\nbool\nFalse\nuse the 1-DiscountFactor prefactor\n\n\nopteinsum\nbool\nTrue\noptimize einsum functions\n\n\nkwargs\n\n\n\n\n\n\n\nsource\n\n\nstep\n\n step (Qisa)\n\nTemporal-difference reward-prediction learning step in value space, given joint state-action values Qisa.\n\n\n\n\nDetails\n\n\n\n\nQisa\njoint state-action values\n\n\n\n\nsource\n\n\nvaluebase.zero_intelligence_values\n\n valuebase.zero_intelligence_values (value:float=0.0)\n\n*Zero-intelligence causes a behavior where agents choose each action with equal probability.\nThis function returns the state-action values for the zero-intelligence strategy with each state-action value set to value.*\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nvalue\nfloat\n0.0\nstate-action value\n\n\n\n\nsource\n\n\nvaluebase.random_values\n\n valuebase.random_values ()\n\nReturns normally distributed random state-action values.\n\nsource\n\n\nid\n\n id ()\n\nReturns an identifier to handle simulation runs.",
+    "crumbs": [
+      "Agents",
+      "Value Base"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "CRLD",
+    "section": "",
+    "text": "Collective Reinforcement Learning Dynamics in Python\nis a tool to model the collective dynamics emerging from multi-agent reinforcement learning.\nMulti-agent reinforcement learning (MARL) provides a comprehensive framework for studying the interplay among learning, representation, and decision-making between multiple actors. As a result, it offers an integrating platform to in-silico test hypotheses and build theory on how different cognitive mechanisms affect collective adaptive behavior in complex environments.\nIn combination with advances in machine learning, particularly deep learning, modern MARL has produced spectacular successes in high-dimensional environments. However, standard RL simulations have significant disadvantages for modeling the collective behavior emerging from MARL: they are noisy, sometimes hard to explain, sample-inefficient, and computationally intense.\nCRLD offers a solution in two ways of idealization. First, CRLD aims to understand the principles behind collective behavior in idealized, low-dimensional environments. Second, CRLD concentrates on the essence of the stochastic and computationally intense reinforcement learning algorithms by deriving their strategy-average, deterministic learning equations.\nIn a nutshell, reinforcement learning agents strive to improve the rewards they receive while interacting with the environment. In each time step, they asses a sample of their current reward-prediction error \\(\\delta\\).\nThe key idea of CRLD is to replace the individual sample realizations with its strategy average plus a small error term,\n\\[\n\\delta \\leftarrow \\bar\\delta + \\epsilon.\n\\]\nOne can interpret these learning dynamics from a cognitive and an engineering perspective. In the limit of a vanishing error term, \\(\\epsilon \\rightarrow 0\\), agents have a perfect model of the current environment (cognitive interpretation) or an infinite replay buffer (engineering interpretation)\nHow to put these ideas into practice?",
+    "crumbs": [
+      "CRLD"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "CRLD",
+    "section": "Install",
+    "text": "Install\nFirst, let’s install the package from github:\npip install \"git+https://github.com/wbarfuss/pyCRLD.git\"",
+    "crumbs": [
+      "CRLD"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "CRLD",
+    "section": "How to use",
+    "text": "How to use\nSecond, we create a minimal example of a phase space portrait of the learning dynamics in a classic social dilemma environment:\n\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\nfrom pyCRLD.Utils import FlowPlot as fp\n\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Init enviornment and MultiAgentEnvironment-interface\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\n# Compute learning trajectory \nnp.random.seed(0)\nx = mae.random_softmax_strategy()  # from a random inital strategy\nxtraj, fixedpointreached = mae.trajectory(x, Tmax=10000, tolerance=1e-5)\n\n# PLOT\nfig, axs = plt.subplots(1,2, figsize=(9,4))\nplt.subplots_adjust(wspace=0.3)\n\n# Plot in phase space\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nax = fp.plot_strategy_flow(mae, x, y, use_RPEarrows=False, flowarrow_points = np.linspace(0.01 ,0.99, 9), axes=[axs[0]])\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\nax[0].set_title(\"Flowplot\")\n\n# Plot in trajectory\naxs[1].plot(xtraj[:, 0, 0, 0], label=\"Agent 0\", c='red')\naxs[1].plot(xtraj[:, 1, 0, 0], label=\"Agent 1\", c='blue')\naxs[1].set_xlabel('Time steps')\naxs[1].set_ylabel('Cooperation probability')\naxs[1].legend()\naxs[1].set_title(\"Trajectory\");\n\n\n\n\n\n\n\n\nWe see how the learning trajectories on the right result from the flow on the left, which suggests that in this environment, mutual cooperation and mutual defection are viable solutions, depending on the initial cooperation levels of both agents.",
+    "crumbs": [
+      "CRLD"
+    ]
+  },
+  {
+    "objectID": "Utils/uflowplot.html",
+    "href": "Utils/uflowplot.html",
+    "title": "FlowPlot",
+    "section": "",
+    "text": "from pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\n\nfrom pyCRLD.Utils import FlowPlot as fp\n\nimport numpy as np\nnp.random.seed(0)\n\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nflowarrow_points = np.linspace(0.01 ,0.99, 9)\nstandards = [mae, x, y, flowarrow_points]\n\n\n\nshowing reward-predition error arrows\n\nax = fp.plot_strategy_flow(*standards)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\n\n\n\n\n\n\n\n\n\n\n\n\nax = fp.plot_strategy_flow(*standards)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\")\n\nX = mae.random_softmax_strategy()\ntrj, fpr = mae.trajectory(X, Tmax=1000, tolerance=1e-6)\nprint(\"Trajectory length:\", len(trj))\nfp.plot_trajectories([trj], x, y, fprs=[fpr], axes=ax);\n\nTrajectory length: 287\n\n\n\n\n\n\n\n\n\n\n\n\nNotices how the edges of the phase space differ compared to the plots with reward-prediction errors above.\n\nax = fp.plot_strategy_flow(*standards, use_RPEarrows=False)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\n\n\n\n\n\n\n\n\n\n\n\nwith reward-prediciton errors\n\nax = fp.plot_strategy_flow(*standards, kind=\"streamplot\")\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\nax[0].set_xlim(0, 1); ax[0].set_ylim(0, 1);\n\n\n\n\n\n\n\n\n\n\n\nwith strategy differences\n\nax = fp.plot_strategy_flow(*standards, kind=\"streamplot\", use_RPEarrows=False)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\nax[0].set_xlim(0, 1); ax[0].set_ylim(0, 1);",
+    "crumbs": [
+      "Utils",
+      "FlowPlot"
+    ]
+  },
+  {
+    "objectID": "Utils/uflowplot.html#examples",
+    "href": "Utils/uflowplot.html#examples",
+    "title": "FlowPlot",
+    "section": "",
+    "text": "from pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\n\nfrom pyCRLD.Utils import FlowPlot as fp\n\nimport numpy as np\nnp.random.seed(0)\n\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\nx = ([0], [0], [0])\ny = ([1], [0], [0])\nflowarrow_points = np.linspace(0.01 ,0.99, 9)\nstandards = [mae, x, y, flowarrow_points]\n\n\n\nshowing reward-predition error arrows\n\nax = fp.plot_strategy_flow(*standards)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\n\n\n\n\n\n\n\n\n\n\n\n\nax = fp.plot_strategy_flow(*standards)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\")\n\nX = mae.random_softmax_strategy()\ntrj, fpr = mae.trajectory(X, Tmax=1000, tolerance=1e-6)\nprint(\"Trajectory length:\", len(trj))\nfp.plot_trajectories([trj], x, y, fprs=[fpr], axes=ax);\n\nTrajectory length: 287\n\n\n\n\n\n\n\n\n\n\n\n\nNotices how the edges of the phase space differ compared to the plots with reward-prediction errors above.\n\nax = fp.plot_strategy_flow(*standards, use_RPEarrows=False)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\n\n\n\n\n\n\n\n\n\n\n\nwith reward-prediciton errors\n\nax = fp.plot_strategy_flow(*standards, kind=\"streamplot\")\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\nax[0].set_xlim(0, 1); ax[0].set_ylim(0, 1);\n\n\n\n\n\n\n\n\n\n\n\nwith strategy differences\n\nax = fp.plot_strategy_flow(*standards, kind=\"streamplot\", use_RPEarrows=False)\nax[0].set_xlabel(\"Agent 0's cooperation probability\")\nax[0].set_ylabel(\"Agent 1's cooperation probability\");\nax[0].set_xlim(0, 1); ax[0].set_ylim(0, 1);",
+    "crumbs": [
+      "Utils",
+      "FlowPlot"
+    ]
+  },
+  {
+    "objectID": "Utils/uflowplot.html#core-methods",
+    "href": "Utils/uflowplot.html#core-methods",
+    "title": "FlowPlot",
+    "section": "Core methods",
+    "text": "Core methods\n\nsource\n\nplot_strategy_flow\n\n plot_strategy_flow (mae, x:tuple, y:tuple, flowarrow_points,\n                     NrRandom:int=3, use_RPEarrows=True, col:str='LEN',\n                     cmap='viridis', kind='quiver+samples', sf=0.5,\n                     lw=1.0, dens=0.75, acts=None, conds=None,\n                     axes:Iterable=None, verbose=False)\n\nCreate a flow plot in strategy space.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nmae\n\n\nCRLD multi-agent environment object\n\n\nx\ntuple\n\nwhich phase space axes to plot along x axes\n\n\ny\ntuple\n\nwhich phase space axes to plot along y axes\n\n\nflowarrow_points\n\n\nspecify range & resolution of flow arrows\n\n\nNrRandom\nint\n3\nhow many random (in the other dimensions) stratgies for averaging\n\n\nuse_RPEarrows\nbool\nTrue\nUse reward-prediction error arrows?, otherwise use strategy differences\n\n\ncol\nstr\nLEN\ncolor indicates either strength of flow via colormap, otherwise a fixed color name\n\n\ncmap\nstr\nviridis\nColormap\n\n\nkind\nstr\nquiver+samples\nKind of plot: “streamplot”, “quiver+samples”, “quiver”, …\n\n\nsf\nfloat\n0.5\nScale factor for quiver arrows\n\n\nlw\nfloat\n1.0\nLine width for streamplot\n\n\ndens\nfloat\n0.75\nDensity for streamplot\n\n\nacts\nNoneType\nNone\nAction descriptions\n\n\nconds\nNoneType\nNone\nConditions descriptions\n\n\naxes\nIterable\nNone\nAxes to plot into\n\n\nverbose\nbool\nFalse\nshall I talk to you while working?\n\n\n\n\nsource\n\n\nplot_trajectories\n\n plot_trajectories (Xtrajs:Iterable, x:tuple, y:tuple,\n                    cols:Iterable=['r'], alphas:Iterable=[1.0],\n                    lss:Iterable=['-'], lws:Iterable=[2],\n                    mss:Iterable=[None], msss:Iterable=[0],\n                    fprs:Union[Iterable,bool]=None,\n                    plot_startmarker:bool=True, axes:Iterable=None,\n                    submean:bool=False)\n\nPlot multiple trajectories in phase space.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nXtrajs\nIterable\n\nIterable of phase space trajectories\n\n\nx\ntuple\n\nwhich phase space axes to plot along x axes\n\n\ny\ntuple\n\nwhich phase space axes to plot along y axes\n\n\ncols\nIterable\n[‘r’]\nColors to iterate through\n\n\nalphas\nIterable\n[1.0]\nAlpha values to iterate through\n\n\nlss\nIterable\n[‘-’]\nLinestyles to iterate through\n\n\nlws\nIterable\n[2]\nLinewidths to iterate through\n\n\nmss\nIterable\n[None]\nEndmarkers to iterate through\n\n\nmsss\nIterable\n[0]\nEndmarker sizes to iterate through\n\n\nfprs\nUnion\nNone\nIteralbe indicating which trajectories reached a fixed point\n\n\nplot_startmarker\nbool\nTrue\nplot a marker at the initial condition\n\n\naxes\nIterable\nNone\nAxes to plot into\n\n\nsubmean\nbool\nFalse",
+    "crumbs": [
+      "Utils",
+      "FlowPlot"
+    ]
+  },
+  {
+    "objectID": "Utils/uflowplot.html#helpers",
+    "href": "Utils/uflowplot.html#helpers",
+    "title": "FlowPlot",
+    "section": "Helpers",
+    "text": "Helpers\n\nsource\n\n_checks_and_balances\n\n _checks_and_balances (x:tuple, y:tuple)\n\nCheck the format of the x and y parameter.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nx\ntuple\nwhich phase space axes to plot along x axes\n\n\ny\ntuple\nwhich phase space axes to plot along y axes\n\n\nReturns\ntuple\n(lengths for each dimension, index of dimension to iter, length of iter)\n\n\n\nLet’s say we want to plot the probability of cooperation of the 0th agent on the \\(x\\) axis and of the 1st agent on the \\(y\\) axis for states 2,3 and 5, we specify (assuming the cooperation is the 0th action)\n\nx = ([0], [2,3,5], [0])\ny = ([1], [2,3,5], [0])\n_checks_and_balances(x, y)\n\n(array([1, 3, 1]), 1, 3)\n\n\n\nsource\n\n\n_prepare_axes\n\n _prepare_axes (axes:Iterable, xlens:tuple)\n\nCheck whether axes have been provided correctly. If axes haven’t been provided, provide them.\n\n\n\n\nType\nDetails\n\n\n\n\naxes\nIterable\nAxes to plot into\n\n\nxlens\ntuple\nLengths for each dimension of x and y\n\n\nReturns\nIterable\nof matplotlib axes\n\n\n\n\n_prepare_axes(None, [1,3,1])\n\narray([&lt;Axes: &gt;, &lt;Axes: &gt;, &lt;Axes: &gt;], dtype=object)\n\n\n\n\n\n\n\n\n\n\nsource\n\n\n_dXisa_s\n\n _dXisa_s (Xisa_s:Iterable, mae)\n\nCompute Xisa(t-1)-Xisa(t) for all Xisa_s.\n\n\n\n\nType\nDetails\n\n\n\n\nXisa_s\nIterable\nof joint strategies Xisa\n\n\nmae\n\nCRLD multi-agent environment object\n\n\nReturns\nndarray\njoint strategy differences\n\n\n\n\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\n\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\nXisa_s = [mae.random_softmax_strategy() for _ in range(7)]\n_dXisa_s(Xisa_s, mae).shape\n\n(7, 2, 1, 2)\n\n\n\nsource\n\n\n_dTDerror_s\n\n _dTDerror_s (Xisa_s:Iterable, mae)\n\nCompute reward-prediction errors TDerror_s for Xs.\n\n\n\n\nType\nDetails\n\n\n\n\nXisa_s\nIterable\nof joint strategies Xisa\n\n\nmae\n\nCRLD multi-agent environment object\n\n\nReturns\nndarray\njoint reward-prediction errors\n\n\n\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\nXisa_s = [mae.random_softmax_strategy() for _ in range(7)]\n_dTDerror_s(Xisa_s, mae).shape\n\n(7, 2, 1, 2)\n\n\n\nsource\n\n\n_strategies\n\n _strategies (mae, xinds:tuple, yinds:tuple, xval:float, yval:float,\n              NrRandom)\n\nCreates strategies (as a particular type of phase space item) for one ax plot point. All strategies have value xval at the xinds index and value yval at the yinds.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\nmae\n\nCRLD multi-agent environment object\n\n\nxinds\ntuple\nof indices of the phase space item to plot along the x axis\n\n\nyinds\ntuple\nof indices of the phase space item to plot along the y axis\n\n\nxval\nfloat\nthe value of the phase space item to plot along the x axis\n\n\nyval\nfloat\nthe value of the phase space item to plot along the y axis\n\n\nNrRandom\n\nhow many random (in the other dimensions) stratgies for averaging\n\n\nReturns\nndarray\nArray of joint strategies\n\n\n\nFor example, given\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\nthe following parameters give\n\nxinds = (0, 0, 0)  # Plot agent 0's state-action item 0, 0\nyinds = (1, 0, 0)  # Plot agent 1's state-action item 0, 0\nNrRandom = 3\n\nstrats = _strategies(mae, xinds, yinds, xval=0.2, yval=0.4, NrRandom=NrRandom)\nassert strats.shape[0] == NrRandom\nstrats.shape\n\n(3, 2, 1, 2)\n\n\nThe first dimension of the _strategies return holds the randomization in the other dimensions than given by xinds and yinds. Note that the randomization in the other dimensions makes no sense in a stateless normal-form game since there are no other dimensions.\n\nsource\n\n\n_data_to_plot\n\n _data_to_plot (mae, flowarrow_points:Iterable, xinds:tuple, yinds:tuple,\n                NrRandom:int, difffunc:collections.abc.Callable,\n                phasespace_items:collections.abc.Callable, verbose=False)\n\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nmae\n\n\nCRLD multi-agent environment object\n\n\nflowarrow_points\nIterable\n\nrange & resolution of flow arrows\n\n\nxinds\ntuple\n\nof indices of the phase space object to plot along the x axis\n\n\nyinds\ntuple\n\nof indices of the phase space object to plot along the y axis\n\n\nNrRandom\nint\n\nhow many random (in the other dimensions) stratgies for averaging\n\n\ndifffunc\nCallable\n\nto compute which kind of arrows to plot (RPE or dX)\n\n\nphasespace_items\nCallable\n\nto obtain phase space items for one ax plot point\n\n\nverbose\nbool\nFalse\nshall I talk to you while working?\n\n\nReturns\ntuple\n\nmeshgrid for (X, Y, dX, dY)\n\n\n\nFor example, given\n\nenv = SocialDilemma(R=1.0, T=0.8, S=-0.5, P=0.0)\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\nthe following parameters give\n\nxinds = (0, 0, 0)  # Plot agent 0's state-action item 0, 0\nyinds = (1, 0, 0)  # Plot agent 1's state-action item 0, 0\nflowarrow_points = np.array([0.1, 0.3, 0.5, 0.7, 0.9])\nNrRandom=7\ndifffunc = _dTDerror_s\nphasespace_items = _strategies\nverbose = True\n\nX, Y, dX, dY = _data_to_plot(mae, flowarrow_points, xinds, yinds, NrRandom, difffunc,\n                             phasespace_items=_strategies, verbose=verbose)\n\nassert X.shape == Y.shape; print(\"\\nShape of `X` and `Y`:\", X.shape)\nassert dX.shape == dY.shape; print(\"Shape of `dX` and `dY`:\", dX.shape)\nassert dX.shape[-1] == NrRandom\n\n [plot] generating data 96 %   \nShape of `X` and `Y`: (5, 5)\nShape of `dX` and `dY`: (5, 5, 7)\n\n\nLet \\(l\\) be the number of the flowarrow_points, than X and Y have shape of (\\(l\\), \\(l\\)). dX and dY have shape of (\\(l\\), \\(l\\), Number of randomizations).\n\nsource\n\n\n_plot\n\n _plot (dX:numpy.ndarray, dY:numpy.ndarray, X:numpy.ndarray,\n        Y:numpy.ndarray, ax=None, sf=1.0, col='LEN', cmap='viridis',\n        kind='quiver+samples', lw=1.0, dens=0.75)\n\nPlots the flow for one condition into one axes\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndX\nndarray\n\ndifferences in x dimension\n\n\ndY\nndarray\n\ndifferences in y dimension\n\n\nX\nndarray\n\nmeshgrid in x dimension\n\n\nY\nndarray\n\nmeshgrid in y dimension\n\n\nax\nNoneType\nNone\nIndividual axis to plot into\n\n\nsf\nfloat\n1.0\nScale factor for quiver arrows\n\n\ncol\nstr\nLEN\nwhat should the color indicatie\n\n\ncmap\nstr\nviridis\nColormap\n\n\nkind\nstr\nquiver+samples\nKind of plot: “quiver”, “quiver+samples”, “quiver”, …\n\n\nlw\nfloat\n1.0\nLine width\n\n\ndens\nfloat\n0.75\nDensity\n\n\n\n\nsource\n\n\n_scale\n\n _scale (x:float, y:float, a:float)\n\nScales length of the (x, y) vector accoring to length to the power of a.\n\n\n\n\nType\nDetails\n\n\n\n\nx\nfloat\nx dimension\n\n\ny\nfloat\ny dimension\n\n\na\nfloat\nscaling factor\n\n\nReturns\ntuple\nscaled (x,y)\n\n\n\nA scale factor of 0 makes all vectors equally large.\n\n_scale(4, 3, 0)\n\n(0.8, 0.6000000000000001)\n\n\n\n_scale(40, 30, 0)\n\n(0.8, 0.6)\n\n\nA scale factor of 1 does not change a vector’s length\n\n_scale(4, 3, 1)\n\n(4.0, 3.0)\n\n\n\n_scale(40, 30, 1)\n\n(40.0, 30.0)",
+    "crumbs": [
+      "Utils",
+      "FlowPlot"
+    ]
+  },
+  {
+    "objectID": "Environments/envecologicalpublicgood.html",
+    "href": "Environments/envecologicalpublicgood.html",
+    "title": "Ecological Public Good",
+    "section": "",
+    "text": "The environment was introduced in",
+    "crumbs": [
+      "Environments",
+      "Ecological Public Good"
+    ]
+  },
+  {
+    "objectID": "Environments/envecologicalpublicgood.html#example",
+    "href": "Environments/envecologicalpublicgood.html#example",
+    "title": "Ecological Public Good",
+    "section": "Example",
+    "text": "Example\n\nfrom pyCRLD.Environments.EcologicalPublicGood import EcologicalPublicGood\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\nfrom pyCRLD.Utils import FlowPlot as fp\nimport numpy as np\n\n\nenv = EcologicalPublicGood(N=2, f=1.2, c=5, m=-4, qc=0.2, qr=0.1, degraded_choice=True)\nenv\n\nEcologicalPublicGood_2_1.2_5_-4_0.2_0.1_DegChoi\n\n\nIn the prosperous state, the rewards are a tragedy Prisoners’ Dilemma.\n\nenv.R[0,1,:,:,1], env.R[1,1,:,:,1]\n\n(array([[ 1., -2.],\n        [ 3.,  0.]]),\n array([[ 1.,  3.],\n        [-2.,  0.]]))\n\n\nYet, because of the possible collapse and the agents’ future outlook, the overall regime is one of coordination.\n\n# Init enviornment and MultiAgentEnvironment-interface\nmae = stratAC(env=env, learning_rates=0.1, discount_factors=0.9)\n\nx = ([0], [0,1], [0])  # Plotting on the x-axis the [0]'s agents probability in both states [0,1] to cooprate [0]\ny = ([1], [0,1], [0])  # Plotting on the y-axis the [1]'s agents probability in both states [0,1] to cooprate [0]\nax = fp.plot_strategy_flow(mae, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)",
+    "crumbs": [
+      "Environments",
+      "Ecological Public Good"
+    ]
+  },
+  {
+    "objectID": "Environments/envecologicalpublicgood.html#implementation",
+    "href": "Environments/envecologicalpublicgood.html#implementation",
+    "title": "Ecological Public Good",
+    "section": "Implementation",
+    "text": "Implementation\n\nsource\n\nEcologicalPublicGood\n\n EcologicalPublicGood (N:int, f:Union[float,Iterable],\n                       c:Union[float,Iterable], m:Union[float,Iterable],\n                       qc:Union[float,Iterable], qr:Union[float,Iterable],\n                       degraded_choice=False)\n\nEcological Public Good Environment.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nN\nint\n\nnumber of agents\n\n\nf\nUnion\n\npublic goods synergy factor\n\n\nc\nUnion\n\ncost of cooperation\n\n\nm\nUnion\n\ncollapse impact\n\n\nqc\nUnion\n\ncollapse leverage/timescale\n\n\nqr\nUnion\n\nrecovery leverage/timescale\n\n\ndegraded_choice\nbool\nFalse\nwhether agents have a choice at the degraded state\n\n\n\n\nsource\n\n\nEcologicalPublicGood.actions\n\n EcologicalPublicGood.actions ()\n\nThe action sets\n\nsource\n\n\nEcologicalPublicGood.states\n\n EcologicalPublicGood.states ()\n\nThe states set\n\nsource\n\n\nEcologicalPublicGood.TransitionTensor\n\n EcologicalPublicGood.TransitionTensor ()\n\nGet the Transition Tensor.\nThe TransitionTensor is obtained with the help of the _transition_probability method.\n\nsource\n\n\nEcologicalPublicGood._transition_probability\n\n EcologicalPublicGood._transition_probability (s:int, jA:Iterable, s_:int)\n\nReturns the transition probability for current state s, joint action jA, and next state s_.\n\n\n\n\nType\nDetails\n\n\n\n\ns\nint\nthe state index\n\n\njA\nIterable\nindices for joint actions\n\n\ns_\nint\nthe next-state index\n\n\nReturns\nfloat\ntransition probability\n\n\n\n\nsource\n\n\nEcologicalPublicGood.RewardTensor\n\n EcologicalPublicGood.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\nThe RewardTensor is obtained with the help of the _reward method.\n\nsource\n\n\nEcologicalPublicGood._reward\n\n EcologicalPublicGood._reward (i:int, s:int, jA:Iterable, s_:int)\n\nReturns the reward value for agent i in current state s, under joint action jA, when transitioning to next state s_.\n\n\n\n\nType\nDetails\n\n\n\n\ni\nint\nthe agent index\n\n\ns\nint\nthe state index\n\n\njA\nIterable\nindices for joint actions\n\n\ns_\nint\nthe next-state index\n\n\nReturns\nfloat\nreward value\n\n\n\n\nsource\n\n\nEcologicalPublicGood.id\n\n EcologicalPublicGood.id ()\n\nReturns id string of environment",
+    "crumbs": [
+      "Environments",
+      "Ecological Public Good"
+    ]
+  },
+  {
+    "objectID": "Environments/envrenewableressources.html",
+    "href": "Environments/envrenewableressources.html",
+    "title": "Renewable Ressources",
+    "section": "",
+    "text": "source\n\n\n\n RenewableRessources (r, C, pR=0.1, obs=None, deltaE=0.2, sig=1.0)\n\nEnvironment with Renewable Ressources.\n\nsource\n\n\n\n\n RenewableRessources.actions ()\n\nDefault action set representations act_im.\n\nsource\n\n\n\n\n RenewableRessources.states ()\n\nDefault state set representation state_s.\n\nsource\n\n\n\n\n RenewableRessources.obs_action_space ()\n\n\nsource\n\n\n\n\n RenewableRessources.TransitionTensor ()\n\nGet the Transition Tensor.\nThe TransitionTensor is obtained with the help of the _transition_probability method.\n\nsource\n\n\n\n\n RenewableRessources._transition_probability (s, jA, sprim)\n\n\nsource\n\n\n\n\n RenewableRessources.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\n\nsource\n\n\n\n\n RenewableRessources.ObservationTensor ()\n\nDefault observation tensor: perfect observation\nThe RewardTensor is obtained with the help of the _reward method.\n\nsource\n\n\n\n\n RenewableRessources._reward (i, s, jA, sprim)\n\n\nsource\n\n\n\n\n RenewableRessources.id ()\n\nReturns id string of environment TODO",
+    "crumbs": [
+      "Environments",
+      "Renewable Ressources"
+    ]
+  },
+  {
+    "objectID": "Environments/envrenewableressources.html#implementation",
+    "href": "Environments/envrenewableressources.html#implementation",
+    "title": "Renewable Ressources",
+    "section": "",
+    "text": "source\n\n\n\n RenewableRessources (r, C, pR=0.1, obs=None, deltaE=0.2, sig=1.0)\n\nEnvironment with Renewable Ressources.\n\nsource\n\n\n\n\n RenewableRessources.actions ()\n\nDefault action set representations act_im.\n\nsource\n\n\n\n\n RenewableRessources.states ()\n\nDefault state set representation state_s.\n\nsource\n\n\n\n\n RenewableRessources.obs_action_space ()\n\n\nsource\n\n\n\n\n RenewableRessources.TransitionTensor ()\n\nGet the Transition Tensor.\nThe TransitionTensor is obtained with the help of the _transition_probability method.\n\nsource\n\n\n\n\n RenewableRessources._transition_probability (s, jA, sprim)\n\n\nsource\n\n\n\n\n RenewableRessources.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\n\nsource\n\n\n\n\n RenewableRessources.ObservationTensor ()\n\nDefault observation tensor: perfect observation\nThe RewardTensor is obtained with the help of the _reward method.\n\nsource\n\n\n\n\n RenewableRessources._reward (i, s, jA, sprim)\n\n\nsource\n\n\n\n\n RenewableRessources.id ()\n\nReturns id string of environment TODO",
+    "crumbs": [
+      "Environments",
+      "Renewable Ressources"
+    ]
+  },
+  {
+    "objectID": "Environments/envuncertainsocialdilemma.html",
+    "href": "Environments/envuncertainsocialdilemma.html",
+    "title": "Uncertain Social Dilemma",
+    "section": "",
+    "text": "from pyCRLD.Environments.UncertainSocialDilemma import UncertainSocialDilemma\nfrom pyCRLD.Environments.SocialDilemma import SocialDilemma\nfrom pyCRLD.Agents.POStrategyActorCritic import POstratAC\nfrom pyCRLD.Agents.StrategyActorCritic import stratAC\n\nfrom pyCRLD.Utils import FlowPlot as fp\nimport numpy as np\n\n\n\nAn example for a two states Prisonners Dilemma, first without observation noise.\n\nenv_fullObs = UncertainSocialDilemma(R1=5, T1=6, S1=-1, P1=0, R2=5, T2=2, S2=-1, P2=0, pC=0.5, obsnoise=0)\nmae_fullObs = POstratAC(env=env_fullObs, learning_rates=0.1, discount_factors=0.9)\npc00, pc01, pc10, pc11 = 0.35, 0.35, 0.8, 0.8\nX = [[[pc00, 1-pc00],     #initial policy to visulize learning trajectory\n      [pc01, 1-pc01]], \n     [[pc10, 1-pc10], \n      [pc11, 1-pc11]]] \nX = np.array(X)\nxtraj, fixedpointreached = mae_fullObs.trajectory(X)\n\nx = ([0], [0,1], [0])  # Plotting on the x-axis the [0]'s agents probability in both observations [0,1] to cooprate [0]\ny = ([1], [0,1], [0])  # Plotting on the y-axis the [1]'s agents probability in both observations [0,1] to cooprate [0]\nax = fp.plot_strategy_flow(mae_fullObs, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\n\n\n\n\n\n\n\n\nIn state 0 both agents learn to defect. In state 1 they learn to cooperate if their initial cooperation prpability is not to low.\nIf we use the stratAC class instead of the POstratAC class, nothing changes because there is no observation noise.\n\nmae_fullObs_strat = stratAC(env=env_fullObs, learning_rates=0.1, discount_factors=0.9)\nxtraj, fixedpointreached = mae_fullObs_strat.trajectory(X)\n\nax = fp.plot_strategy_flow(mae_fullObs_strat, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\n\n\n\n\n\n\n\n\n\n\n\nWhat happens when in each state the agents think they are in the true or in the other state with the same propability?\n\nenv_randObs = UncertainSocialDilemma(R1=5, T1=6, S1=-1, P1=0, R2=5, T2=2, S2=-1, P2=0, pC=0.5, obsnoise=0.5)\nmae_randObs = POstratAC(env=env_randObs, learning_rates=0.1, discount_factors=0.9)\nxtraj, fixedpointreached = mae_randObs.trajectory(X)\n\nax = fp.plot_strategy_flow(mae_randObs, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\n\n\n\n\n\n\n\n\nThe learning trajectories in both states are the same. In both states the agents can learn to defect or to cooperate, depending on the inital policy.\n\n\n\nHow does a high observation noise of 0.45 (hence the it is still more probable to observe the true state) influence the learning dynamics compared to a low observation noise of 0.2?\n\nenv_bituncertObs = UncertainSocialDilemma(R1=5, T1=6, S1=-1, P1=0, R2=5, T2=2, S2=-1, P2=0, pC=0.5, obsnoise=0.2)\nmae_bituncertObs = POstratAC(env=env_bituncertObs, learning_rates=0.1, discount_factors=0.9)\nxtraj, fixedpointreached = mae_bituncertObs.trajectory(X)\n\nax = fp.plot_strategy_flow(mae_bituncertObs, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\n\n\n\n\n\n\n\n\nFor a low noise the dynamics are close the the dynamics for full observation.\n\nenv_veryuncertObs = UncertainSocialDilemma(R1=5, T1=6, S1=-1, P1=0, R2=5, T2=2, S2=-1, P2=0, pC=0.5, obsnoise=0.45)\nmae_veryuncertObs = POstratAC(env=env_veryuncertObs, learning_rates=0.1, discount_factors=0.9)\nxtraj, fixedpointreached = mae_veryuncertObs.trajectory(X)\n\nax = fp.plot_strategy_flow(mae_veryuncertObs, x, y, flowarrow_points = np.linspace(0.01 ,0.99, 9), NrRandom=16)\nfp.plot_trajectories([xtraj], x, y, cols=['purple'], axes=ax);\n\n\n\n\n\n\n\n\nOnly for relatively high noise we clearly see its influence.\n\n\n\n\nsource\n\n\n\n UncertainSocialDilemma (R1, T1, S1, P1, R2, T2, S2, P2, pC, obsnoise)\n\nBase environment. All environments should inherit from this one.\n\nsource\n\n\n\n\n UncertainSocialDilemma.actions ()\n\nDefault action set representations act_im.\n\nsource\n\n\n\n\n UncertainSocialDilemma.states ()\n\nDefault state set representation state_s.\n\nsource\n\n\n\n\n UncertainSocialDilemma.TransitionTensor ()\n\nGet the Transition Tensor.\n\nsource\n\n\n\n\n UncertainSocialDilemma.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\n\nsource\n\n\n\n\n UncertainSocialDilemma.ObservationTensor ()\n\nDefault observation tensor: perfect observation\n\nsource\n\n\n\n\n UncertainSocialDilemma.id ()\n\nReturns id string of environment",
+    "crumbs": [
+      "Environments",
+      "Uncertain Social Dilemma"
+    ]
+  },
+  {
+    "objectID": "Environments/envuncertainsocialdilemma.html#implementation",
+    "href": "Environments/envuncertainsocialdilemma.html#implementation",
+    "title": "Uncertain Social Dilemma",
+    "section": "",
+    "text": "source\n\n\n\n UncertainSocialDilemma (R1, T1, S1, P1, R2, T2, S2, P2, pC, obsnoise)\n\nBase environment. All environments should inherit from this one.\n\nsource\n\n\n\n\n UncertainSocialDilemma.actions ()\n\nDefault action set representations act_im.\n\nsource\n\n\n\n\n UncertainSocialDilemma.states ()\n\nDefault state set representation state_s.\n\nsource\n\n\n\n\n UncertainSocialDilemma.TransitionTensor ()\n\nGet the Transition Tensor.\n\nsource\n\n\n\n\n UncertainSocialDilemma.RewardTensor ()\n\nGet the Reward Tensor R[i,s,a1,…,aN,s’].\n\nsource\n\n\n\n\n UncertainSocialDilemma.ObservationTensor ()\n\nDefault observation tensor: perfect observation\n\nsource\n\n\n\n\n UncertainSocialDilemma.id ()\n\nReturns id string of environment",
+    "crumbs": [
+      "Environments",
+      "Uncertain Social Dilemma"
+    ]
+  }
+]

@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Embed an environment into a more complex representation of state/observation-action histories">
+
+<title>History Embedding – pyCRLD</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="History Embedding – pyCRLD">
+<meta property="og:description" content="Embed an environment into a more complex representation of state/observation-action histories">
+<meta property="og:site_name" content="pyCRLD">
+<meta name="twitter:title" content="History Embedding – pyCRLD">
+<meta name="twitter:description" content="Embed an environment into a more complex representation of state/observation-action histories">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Environments/envbase.html">Environments</a></li><li class="breadcrumb-item"><a href="../Environments/envhistoryembedding.html">History Embedding</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">pyCRLD</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CRLD</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/astrategyactorcritic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Strategy Actor-Critic</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/astrategysarsa.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Strategy SARSA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/apostrategyactorcritic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Strategy AC (part. Obs.)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/avaluesarsa.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Value SARSA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/astrategybase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Strategy Base</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/avaluebase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Value Base</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/apostrategybase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Strategy Base (part. Obs.)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/apobase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Base (part. Obs.)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Agents/abase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Base</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Environments</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envbase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Environment Base</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envhistoryembedding.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">History Embedding</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envsocialdilemma.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Social Dilemma</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envecologicalpublicgood.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Ecological Public Good</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envuncertainsocialdilemma.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Uncertain Social Dilemma</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envrenewableressources.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Renewable Ressources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Environments/envriskreward.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Risk Reward Dilemma</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Utils</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Utils/uflowplot.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowPlot</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Utils/uhelpers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Helpers</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a>
+  <ul class="collapse">
+  <li><a href="#memory-one-prisoners-dilemma" id="toc-memory-one-prisoners-dilemma" class="nav-link" data-scroll-target="#memory-one-prisoners-dilemma">Memory-one Prisoner’s Dilemma</a></li>
+  <li><a href="#memory-one-ecological-public-good" id="toc-memory-one-ecological-public-good" class="nav-link" data-scroll-target="#memory-one-ecological-public-good">Memory-one Ecological Public Good</a></li>
+  </ul></li>
+  <li><a href="#implementation" id="toc-implementation" class="nav-link" data-scroll-target="#implementation">Implementation</a>
+  <ul class="collapse">
+  <li><a href="#histories" id="toc-histories" class="nav-link" data-scroll-target="#histories">Histories</a></li>
+  <li><a href="#get_all_histories" id="toc-get_all_histories" class="nav-link" data-scroll-target="#get_all_histories">_get_all_histories</a></li>
+  <li><a href="#hist_contains_notpossibletrans" id="toc-hist_contains_notpossibletrans" class="nav-link" data-scroll-target="#hist_contains_notpossibletrans">_hist_contains_NotPossibleTrans</a></li>
+  <li><a href="#stateacthistsix" id="toc-stateacthistsix" class="nav-link" data-scroll-target="#stateacthistsix">StateActHistsIx</a></li>
+  <li><a href="#hsset" id="toc-hsset" class="nav-link" data-scroll-target="#hsset">hSset</a></li>
+  <li><a href="#transitions-tensor" id="toc-transitions-tensor" class="nav-link" data-scroll-target="#transitions-tensor">Transitions tensor</a></li>
+  <li><a href="#histsja_transitiontensor" id="toc-histsja_transitiontensor" class="nav-link" data-scroll-target="#histsja_transitiontensor">histSjA_TransitionTensor</a></li>
+  <li><a href="#reward-tensor" id="toc-reward-tensor" class="nav-link" data-scroll-target="#reward-tensor">Reward tensor</a></li>
+  <li><a href="#histsja_rewardtensor" id="toc-histsja_rewardtensor" class="nav-link" data-scroll-target="#histsja_rewardtensor">histSjA_RewardTensor</a></li>
+  <li><a href="#partial-observation-and-environmental-uncertainty" id="toc-partial-observation-and-environmental-uncertainty" class="nav-link" data-scroll-target="#partial-observation-and-environmental-uncertainty">Partial observation and environmental uncertainty</a></li>
+  <li><a href="#obsacthistsix" id="toc-obsacthistsix" class="nav-link" data-scroll-target="#obsacthistsix">ObsActHistsIx</a></li>
+  <li><a href="#hoset" id="toc-hoset" class="nav-link" data-scroll-target="#hoset">hOset</a></li>
+  <li><a href="#histsja_observationtensor" id="toc-histsja_observationtensor" class="nav-link" data-scroll-target="#histsja_observationtensor">histSjA_ObservationTensor</a></li>
+  <li><a href="#environment-wrapper" id="toc-environment-wrapper" class="nav-link" data-scroll-target="#environment-wrapper">Environment wrapper</a></li>
+  <li><a href="#historyembedded" id="toc-historyembedded" class="nav-link" data-scroll-target="#historyembedded">HistoryEmbedded</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Environments/envbase.html">Environments</a></li><li class="breadcrumb-item"><a href="../Environments/envhistoryembedding.html">History Embedding</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">History Embedding</h1>
+</div>
+
+<div>
+  <div class="description">
+    Embed an environment into a more complex representation of state/observation-action histories
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<div id="2a99f35f-d960-411d-868c-4d789c9e6a6a" class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyCRLD.Environments.SocialDilemma <span class="im">import</span> SocialDilemma</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyCRLD.Environments.EcologicalPublicGood <span class="im">import</span> EcologicalPublicGood</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyCRLD.Agents.StrategyActorCritic <span class="im">import</span> stratAC</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyCRLD.Utils <span class="im">import</span> FlowPlot <span class="im">as</span> fp</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="f3870f5c-254b-4988-8f8f-727463703b5e" class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyCRLD.Environments.HistoryEmbedding <span class="im">import</span> HistoryEmbedded</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fffb6d48-a276-4599-ace1-a0f2ac578525" class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>socdi <span class="op">=</span> SocialDilemma(R<span class="op">=</span><span class="fl">1.0</span>, T<span class="op">=</span><span class="fl">1.2</span>, S<span class="op">=-</span><span class="fl">0.5</span>, P<span class="op">=</span><span class="fl">0.0</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ecopg <span class="op">=</span> EcologicalPublicGood(N<span class="op">=</span><span class="dv">2</span>, f<span class="op">=</span><span class="fl">1.2</span>, c<span class="op">=</span><span class="dv">5</span>, m<span class="op">=-</span><span class="dv">5</span>, qc<span class="op">=</span><span class="fl">0.2</span>, qr<span class="op">=</span><span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="memory-one-prisoners-dilemma" class="level3">
+<h3 class="anchored" data-anchor-id="memory-one-prisoners-dilemma">Memory-one Prisoner’s Dilemma</h3>
+<p>With <em>history embedding</em>, we can wrap the standard normal form social dilemma envrionment into one, where the agents condition their action on the actions of the last rounds</p>
+<div id="3bc87537-8fb7-4bb5-a7ad-471c2377c65a" class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>memo1pd <span class="op">=</span> HistoryEmbedded(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>which has effectively a state set with the four elements</p>
+<div id="e9fd5440-13b2-427d-939c-168044dff2f5" class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>memo1pd.Sset</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>['c,c,.|', 'c,d,.|', 'd,c,.|', 'd,d,.|']</code></pre>
+</div>
+</div>
+<p>As you can see in the flow plots, this opens the possiblity for cooperation:</p>
+<div id="aea5867d-19a4-4776-a8f2-d28b3f06db93" class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mae1 <span class="op">=</span> stratAC(env<span class="op">=</span>memo1pd, learning_rates<span class="op">=</span><span class="fl">0.1</span>, discount_factors<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> ([<span class="dv">0</span>], [<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>], [<span class="dv">0</span>])</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> ([<span class="dv">1</span>], [<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>], [<span class="dv">0</span>])</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> fp.plot_strategy_flow(mae1, x, y, flowarrow_points<span class="op">=</span>np.linspace(<span class="fl">0.01</span> ,<span class="fl">0.99</span>, <span class="dv">9</span>), NrRandom<span class="op">=</span><span class="dv">32</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                           conds<span class="op">=</span>mae1.env.Sset)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_EnvHistoryEmbedding_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In contrast to the case where agents do not react to the actions of the past round. Here, the only strategy the agents learn is defection:</p>
+<div id="0ce9391d-1af8-43e2-b30e-924b27cfc68e" class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>mae0 <span class="op">=</span> stratAC(env<span class="op">=</span>socdi, learning_rates<span class="op">=</span><span class="fl">0.1</span>, discount_factors<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> ([<span class="dv">0</span>], [<span class="dv">0</span>], [<span class="dv">0</span>])</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> ([<span class="dv">1</span>], [<span class="dv">0</span>], [<span class="dv">0</span>])</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> fp.plot_strategy_flow(mae0, x, y, flowarrow_points<span class="op">=</span>np.linspace(<span class="fl">0.01</span> ,<span class="fl">0.99</span>, <span class="dv">9</span>), NrRandom<span class="op">=</span><span class="dv">32</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_EnvHistoryEmbedding_files/figure-html/cell-8-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>What is the effect of having longer action histories?</p>
+<div id="e083c124-0920-40b9-9fbb-ab9077a723ea" class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>hlen <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>memoXpd <span class="op">=</span> HistoryEmbedded(socdi, h<span class="op">=</span>(<span class="dv">1</span>, hlen, hlen))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>( <span class="bu">len</span>(memoXpd.Sset) )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>16</code></pre>
+</div>
+</div>
+<div id="15a6a7ce-4bdd-43a8-a03f-bc89e2baa237" class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>maeX <span class="op">=</span> stratAC(env<span class="op">=</span>memoXpd, learning_rates<span class="op">=</span><span class="fl">0.1</span>, discount_factors<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>,<span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">9</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>faps <span class="op">=</span> np.linspace(<span class="fl">0.01</span> ,<span class="fl">0.99</span>, <span class="dv">13</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> ([<span class="dv">0</span>], [<span class="dv">0</span>], [<span class="dv">0</span>])</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> ([<span class="dv">1</span>], [<span class="dv">0</span>], [<span class="dv">0</span>])</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>fp.plot_strategy_flow(mae1, x, y, flowarrow_points<span class="op">=</span>faps, NrRandom<span class="op">=</span><span class="dv">32</span>, cmap<span class="op">=</span><span class="st">"Blues"</span>, axes<span class="op">=</span>[ax])</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>fp.plot_strategy_flow(maeX, x, y, flowarrow_points<span class="op">=</span>faps, NrRandom<span class="op">=</span><span class="dv">32</span>, cmap<span class="op">=</span><span class="st">"Reds"</span>, axes<span class="op">=</span>[ax])<span class="op">;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Agent 0's cooperation probability"</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Agent 1's cooperation probability"</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Full cooperation in past rounds"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_EnvHistoryEmbedding_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The longer action histories give additional force to mutual cooperation when the agents have cooperated in the past rounds and are close to cooperation. This suggests the hypothesis that longer action histories are beneficial for cooperation to be learned. However, more simulation would be needed to answer this question.</p>
+</section>
+<section id="memory-one-ecological-public-good" class="level3">
+<h3 class="anchored" data-anchor-id="memory-one-ecological-public-good">Memory-one Ecological Public Good</h3>
+<p>What is the effect of condition actions also on the past actions in the ecological public goods envrionment?</p>
+<div id="e1e02fc5-f606-481c-90a9-29d2604b2d77" class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ecopg1 <span class="op">=</span> HistoryEmbedded(ecopg, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ecopg1.Sset</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>['c,c,g|',
+ 'c,c,p|',
+ 'c,d,g|',
+ 'c,d,p|',
+ 'd,c,g|',
+ 'd,c,p|',
+ 'd,d,g|',
+ 'd,d,p|']</code></pre>
+</div>
+</div>
+<p>Visualizing the flow of learning in the prosperous state:</p>
+<div id="9629eb1f-d880-4d13-8310-0baeac8d4990" class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>mae1 <span class="op">=</span> stratAC(env<span class="op">=</span>ecopg1, learning_rates<span class="op">=</span><span class="fl">0.1</span>, discount_factors<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> ([<span class="dv">0</span>], [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>], [<span class="dv">0</span>])</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> ([<span class="dv">1</span>], [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>], [<span class="dv">0</span>])</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> fp.plot_strategy_flow(mae1, x, y, flowarrow_points<span class="op">=</span>np.linspace(<span class="fl">0.01</span> ,<span class="fl">0.99</span>, <span class="dv">9</span>), NrRandom<span class="op">=</span><span class="dv">32</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                           conds<span class="op">=</span>np.array(mae1.env.Sset)[[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_EnvHistoryEmbedding_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This flow has similarites to the flow of the memory-1 Prisoner’s Dilemma above, yet with more tendency toward cooperation. This is expected, since the ecological public good without memory-1 has also more tendency towards cooperation.</p>
+</section>
+</section>
+<section id="implementation" class="level2">
+<h2 class="anchored" data-anchor-id="implementation">Implementation</h2>
+<section id="histories" class="level3">
+<h3 class="anchored" data-anchor-id="histories">Histories</h3>
+<p>A history specification determines which realizations of the past the agents will conditions their actions on.</p>
+<p>A history specification <code>h</code> is an iterable of length 1+<code>N</code>. The first value indicates how many time steps of the state observation the agents will use to conditions their actions on. The remaining values indicate how many actions of each agent are used.</p>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L18" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="get_all_histories" class="level3">
+<h3 class="anchored" data-anchor-id="get_all_histories">_get_all_histories</h3>
+<blockquote class="blockquote">
+<pre><code> _get_all_histories (env, h, attr='Z')</code></pre>
+</blockquote>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Default</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>env</td>
+<td></td>
+<td></td>
+<td>An environment</td>
+</tr>
+<tr class="even">
+<td>h</td>
+<td></td>
+<td></td>
+<td>A history specification</td>
+</tr>
+<tr class="odd">
+<td>attr</td>
+<td>str</td>
+<td>Z</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The <em>default</em> history specification is <code>h=(1,0,0)</code>. Each agent observes information about the previous state, but none about the other agents.</p>
+<div id="bdda0ee0-69b2-465c-a433-a67868c38d6e" class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="269ab378-e4e7-4d57-85bc-08213571027b" class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(ecopg, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Each element of these lists is one <em>history</em>. The <code>'.'</code> indicates a dummy value for the non-observable actions. As you can see, here, the actions come before the state information - in contrast to the history specification <code>h</code>. You can think of time traveling from left to right in each history. First the agents choose their joint action, than they observe some state information, after which they choose another joint action. And so on, and so forth.</p>
+<p>For example, the often used <em>memory-one</em> social dilemmas can be obtained by</p>
+<div id="81aba61c-3b0a-4ddf-b44c-fff9be46be0e" class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(socdi, h<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here, the information about the environment is discarded, indicated by the <code>'.'</code>.</p>
+<p>But the action-history lengths need not be identical,</p>
+<div id="f41a9db4-bcdf-43ee-a091-6bab17e00198" class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(socdi, h<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here, each history contains six elements, since it spans two time steps, and each time step is represented by one element for each agent’s action plus one element for the environment.</p>
+<p>Of course, histories can be obtained for any environment.</p>
+<div id="5df3a7b1-b93c-4ff0-8f63-6f904c71f0ef" class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(ecopg, h<span class="op">=</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>With <a href="https://wbarfuss.github.io/pyCRLD/Environments/envhistoryembedding.html#_get_all_histories"><code>_get_all_histories</code></a> we simply iterate through all state and action indicies. However, we are not checking whether a history is actually possible given the transition probabilities of the envrionment.</p>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L49" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="hist_contains_notpossibletrans" class="level3">
+<h3 class="anchored" data-anchor-id="hist_contains_notpossibletrans">_hist_contains_NotPossibleTrans</h3>
+<blockquote class="blockquote">
+<pre><code> _hist_contains_NotPossibleTrans (env, hist:Iterable)</code></pre>
+</blockquote>
+<p><em>Checks whether the history contains transitions which are not possible with the environment’s transition probabilities.</em></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>env</td>
+<td></td>
+<td>An environment</td>
+</tr>
+<tr class="even">
+<td>hist</td>
+<td>Iterable</td>
+<td>A history</td>
+</tr>
+<tr class="odd">
+<td><strong>Returns</strong></td>
+<td><strong>bool</strong></td>
+<td><strong>History impossible?</strong></td>
+</tr>
+</tbody>
+</table>
+<p>For example, in the prosperous state <code>1</code> of the ecological public good, when both agents choose the cooperative action <code>0</code>, there is no chance to leave the propserous state and enter the degraded state <code>0</code>.</p>
+<div id="75e9ea80-b05d-44d6-bd4e-cd13eedc5525" class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>_hist_contains_NotPossibleTrans(ecopg, hist<span class="op">=</span>(<span class="st">'.'</span>, <span class="st">'.'</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Thus, any history that contains this transition is not needed.</p>
+<p>Yet, if only one agent chooses the defective action <code>0</code>, a transition to the degraded state becomes possible and corresponding histories cannot be discarded.</p>
+<div id="fd72ab7b-5d3a-45e1-b3cf-228e7ddf5ed5" class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>_hist_contains_NotPossibleTrans(ecopg, hist<span class="op">=</span>(<span class="st">'.'</span>, <span class="st">'.'</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="b6ccb4f7-b2e0-4c77-bd1f-67cc074575a0" class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>_hist_contains_NotPossibleTrans(ecopg, hist<span class="op">=</span>(<span class="st">'.'</span>, <span class="st">'.'</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L83" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="stateacthistsix" class="level3">
+<h3 class="anchored" data-anchor-id="stateacthistsix">StateActHistsIx</h3>
+<blockquote class="blockquote">
+<pre><code> StateActHistsIx (env, h)</code></pre>
+</blockquote>
+<p>*Returns all state-action histories (in indices) of <code>env</code>.</p>
+<p><code>h</code> specifies the type of history. <code>h</code> must be an iterable of length 1+N (where N = Nr. of Agents) The first element of <code>h</code> specifies the length of the state-history Subsequent elements specify the length of the respective action-history*</p>
+<p>For example, the <em>memory-one</em> social dilemmas is obtained by</p>
+<div id="7a34d020-641d-43d5-ba99-fab9d36e964d" class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>StateActHistsIx(socdi, h<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>which is identical to</p>
+<div id="e08fa47d-9060-41c1-a960-b2974f360e8f" class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>_get_all_histories(socdi, h<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>since all histories are actually possible in the environment.</p>
+<p>However, in our ecological public good example, this is not the case:</p>
+<div id="bad3ccc0-377f-4986-98d7-d338802be92c" class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(StateActHistsIx(ecopg, h<span class="op">=</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="65c2c7e0-34e4-4a1d-959e-ac17a7d0186b" class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(_get_all_histories(ecopg, h<span class="op">=</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Depending on the environment, filtering out impossible histories can lead to a significant performance boost.</p>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L105" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="hsset" class="level3">
+<h3 class="anchored" data-anchor-id="hsset">hSset</h3>
+<blockquote class="blockquote">
+<pre><code> hSset (env, h)</code></pre>
+</blockquote>
+<p><em>String representation of the histories.</em></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>env</td>
+<td>An environment</td>
+</tr>
+<tr class="even">
+<td>h</td>
+<td>A history specificaiton</td>
+</tr>
+</tbody>
+</table>
+<p>For example,</p>
+<div id="9b9052ef-127e-4ac9-be5e-708a05248881" class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>hSset(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="1f3d1a94-3038-496c-928d-85e620fd0249" class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>hSset(ecopg, h<span class="op">=</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="transitions-tensor" class="level3">
+<h3 class="anchored" data-anchor-id="transitions-tensor">Transitions tensor</h3>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L129" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="histsja_transitiontensor" class="level3">
+<h3 class="anchored" data-anchor-id="histsja_transitiontensor">histSjA_TransitionTensor</h3>
+<blockquote class="blockquote">
+<pre><code> histSjA_TransitionTensor (env, h)</code></pre>
+</blockquote>
+<p>*Returns Transition Tensor of <code>env</code> with state-action history specification <code>h</code>.</p>
+<p><code>h</code> must be an iterable of length 1+N (where N = Nr. of Agents) The first element of <code>h</code> specifies the length of the state-history Subsequent elements specify the length of the respective action-history*</p>
+<p>For example,</p>
+<div id="360393fb-19b2-42c1-97d7-7ba9a93eb0d2" class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>histSjA_TransitionTensor(socdi, h<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>)).shape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="6d4787d6-2008-42ca-a0be-1f7e8c9a98de" class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>histSjA_TransitionTensor(ecopg, h<span class="op">=</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>)).shape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="reward-tensor" class="level3">
+<h3 class="anchored" data-anchor-id="reward-tensor">Reward tensor</h3>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L188" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="histsja_rewardtensor" class="level3">
+<h3 class="anchored" data-anchor-id="histsja_rewardtensor">histSjA_RewardTensor</h3>
+<blockquote class="blockquote">
+<pre><code> histSjA_RewardTensor (env, h)</code></pre>
+</blockquote>
+<p>*Returns Reward Tensor of <code>env</code> with state-action history specification <code>h</code>.</p>
+<p><code>h</code> must be an iterable of length 1+N (where N = Nr. of Agents) The first element of <code>h</code> specifies the length of the state-history Subsequent elements specify the length of the respective action-history*</p>
+<p>For example,</p>
+<div id="b7ec2104-b72a-4c4d-a5d1-2cac1e5045e3" class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>histSjA_RewardTensor(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>)).shape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="165f754e-5e4e-49fd-ba20-928aa23724e2" class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>histSjA_RewardTensor(ecopg, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>)).shape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="partial-observation-and-environmental-uncertainty" class="level3">
+<h3 class="anchored" data-anchor-id="partial-observation-and-environmental-uncertainty">Partial observation and environmental uncertainty</h3>
+<p>Note: These elements are useful for enviroments with state uncertainty or likewise, partial observability. Such are not yet available in this respository.</p>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L219" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="obsacthistsix" class="level3">
+<h3 class="anchored" data-anchor-id="obsacthistsix">ObsActHistsIx</h3>
+<blockquote class="blockquote">
+<pre><code> ObsActHistsIx (env, h)</code></pre>
+</blockquote>
+<p>*Returns all obs-action histories of <code>env</code>.</p>
+<p><code>h</code> specifies the type of history. <code>h</code> must be an iterable of length 1+N (where N = Nr. of Agents) The first element of <code>h</code> specifies the length of the obs-history Subsequent elements specify the length of the respective action-history</p>
+<p>Note: Here only partial observability regarding the envrionmental state applies. Additional partial observability regarding action is treated seperatly.*</p>
+<div id="142f2949-c9dc-4a62-a5ba-e7792044e690" class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>ObsActHistsIx(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L263" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="hoset" class="level3">
+<h3 class="anchored" data-anchor-id="hoset">hOset</h3>
+<blockquote class="blockquote">
+<pre><code> hOset (env, h)</code></pre>
+</blockquote>
+<div id="89717cc4-4dc6-4c20-a205-5413e66e0b09" class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>hOset(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L286" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="histsja_observationtensor" class="level3">
+<h3 class="anchored" data-anchor-id="histsja_observationtensor">histSjA_ObservationTensor</h3>
+<blockquote class="blockquote">
+<pre><code> histSjA_ObservationTensor (env, h)</code></pre>
+</blockquote>
+<p><em>Returns Observation Tensor of <code>env</code> with state-action history <code>h</code>[iterable]</em></p>
+<div id="43be9bb1-4c22-4b55-9a19-b3901d291ff5" class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>histSjA_ObservationTensor(socdi, h<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="environment-wrapper" class="level3">
+<h3 class="anchored" data-anchor-id="environment-wrapper">Environment wrapper</h3>
+<hr>
+<p><a href="https://github.com/wbarfuss/pyCRLD/blob/main/pyCRLD/Environments/HistoryEmbedding.py#L314" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="historyembedded" class="level3">
+<h3 class="anchored" data-anchor-id="historyembedded">HistoryEmbedded</h3>
+<blockquote class="blockquote">
+<pre><code> HistoryEmbedded (env, h)</code></pre>
+</blockquote>
+<p>*Abstract Environment wrapper to embed a given environment into a larger history space</p>
+<p><code>h</code> must be an iterable of length 1+N (where N=Nr. of Agents) The first element of <code>history</code> specifies the length of the state-history. Subsequent elements specify the length of the respective action-history*</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>env</td>
+<td>An environment</td>
+</tr>
+<tr class="even">
+<td>h</td>
+<td>History specification</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/wbarfuss\.github\.io\/pyCRLD");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
